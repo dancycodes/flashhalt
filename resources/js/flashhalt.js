@@ -25,6 +25,11 @@
       // Configuration will be injected by Laravel during asset publishing
       this.config = window.FlashHALTConfig || this.getDefaultConfig();
 
+      // Convert string route pattern to RegExp if needed
+      if (typeof this.config.routePattern === "string") {
+        this.config.routePattern = new RegExp(this.config.routePattern);
+      }
+
       // Performance and debugging metrics
       this.stats = {
         requestsProcessed: 0,
@@ -193,7 +198,6 @@
      */
     getCsrfToken() {
       const now = Date.now();
-      console.log("run");
 
       // Return cached token if it's still fresh
       if (
