@@ -20,7 +20,7 @@
       "name": "Gouater Loic Dimitri"
     }
   ],
-  "minimum-stability": "beta",
+  "minimum-stability": "rc",
   "require": {},
   "require-dev": {
     "orchestra/testbench": "^9.0",
