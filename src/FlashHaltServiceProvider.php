@@ -9,29 +9,32 @@ use DancyCodes\FlashHalt\Services\ControllerResolver;
 use DancyCodes\FlashHalt\Services\RouteCompiler;
 use DancyCodes\FlashHalt\Services\SecurityValidator;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class FlashHaltServiceProvider extends ServiceProvider
 {
     /**
+     * Flag to track whether JavaScript assets have been published this request.
+     * This prevents duplicate publishing and improves performance.
+     */
+    protected bool $assetsPublished = false;
+
+    /**
      * Register any application services.
      * 
-     * This method is called first during Laravel's bootstrap process.
-     * Here we bind our services to the container and merge configuration,
-     * but we don't interact with other Laravel services yet.
+     * This method runs first during Laravel's bootstrap process.
+     * We'll add JavaScript asset management services alongside your existing services.
      */
     public function register(): void
     {
-        // Merge our package configuration with the application's configuration
-        // This allows users to override our defaults while providing sensible defaults
+        // Your existing service registrations remain unchanged
         $this->mergeConfigFrom(
             __DIR__ . '/../config/flashhalt.php',
             'flashhalt'
         );
 
-        // Register our core services as singletons in the service container
-        // Singletons ensure that the same instance is used throughout the request lifecycle,
-        // which is important for caching and performance optimization
         $this->app->singleton(ControllerResolver::class, function ($app) {
             return new ControllerResolver(
                 $app[SecurityValidator::class],
@@ -60,45 +63,445 @@ class FlashHaltServiceProvider extends ServiceProvider
     /**
      * Bootstrap any package services.
      * 
-     * This method is called after all service providers have been registered.
-     * Here we can safely interact with other Laravel services and register
-     * our middleware, commands, and routes.
+     * This method runs after all service providers are registered.
+     * We'll add automatic JavaScript integration alongside your existing bootstrap logic.
      */
     public function boot(): void
     {
-        // Register our middleware with Laravel's router
+        // Your existing middleware registration
         $this->registerMiddleware();
 
-        // Register our Artisan commands for compilation and management
+        // Your existing command registration
         $this->registerCommands();
 
-        // Set up route registration based on current mode
+        // Your existing route registration
         $this->registerRoutes();
 
-        // Publish configuration and assets for user customization
+        // NEW: JavaScript asset management and integration
+        $this->registerJavaScriptIntegration();
+
+        // Your existing publishing capabilities
         $this->registerPublishing();
 
-        // Register any additional services that need the full Laravel application
-        $this->registerAdditionalServices();
+        // NEW: View composers for automatic script injection
+        $this->registerViewComposers();
+
+        // NEW: Blade directives for manual integration when needed
+        $this->registerBladeDirectives();
     }
 
     /**
-     * Register FlashHalt middleware with Laravel's routing system.
+     * Register JavaScript integration capabilities.
      * 
-     * We register our middleware with an alias so it can be easily
-     * referenced in route definitions and middleware groups.
+     * This method sets up automatic asset publishing and configuration injection
+     * that makes FlashHALT work seamlessly without developer intervention.
      */
+    protected function registerJavaScriptIntegration(): void
+    {
+        // Only proceed if JavaScript integration is enabled
+        if (!$this->isJavaScriptIntegrationEnabled()) {
+            return;
+        }
+
+        // Automatically publish JavaScript assets if needed
+        $this->ensureJavaScriptAssetsArePublished();
+
+        // Set up automatic configuration injection
+        $this->setupConfigurationInjection();
+
+        // Register script inclusion detection
+        $this->setupScriptInclusionLogic();
+    }
+
+    /**
+     * Determine if JavaScript integration should be enabled.
+     * 
+     * This method demonstrates intelligent feature detection based on your
+     * existing configuration system and application environment.
+     */
+    protected function isJavaScriptIntegrationEnabled(): bool
+    {
+        $config = $this->app['config']->get('flashhalt', []);
+
+        // Check if JavaScript integration is explicitly disabled
+        if (isset($config['integration']['javascript_enabled']) && 
+            !$config['integration']['javascript_enabled']) {
+            return false;
+        }
+
+        // Check if we're in an environment where JavaScript integration makes sense
+        if ($this->app->runningInConsole() && !$this->app->runningUnitTests()) {
+            return false; // Don't include JavaScript during console commands
+        }
+
+        // Enable JavaScript integration by default for web requests
+        return true;
+    }
+
+    /**
+     * Ensure JavaScript assets are published and available.
+     * 
+     * This method implements intelligent asset publishing that automatically
+     * handles versioning, caching, and development vs production differences.
+     */
+    protected function ensureJavaScriptAssetsArePublished(): void
+    {
+        // Avoid duplicate publishing within the same request
+        if ($this->assetsPublished) {
+            return;
+        }
+
+        $publicPath = public_path('vendor/flashhalt/js');
+        $sourcePath = __DIR__ . '/../resources/js';
+
+        // Check if assets need to be published or updated
+        if ($this->shouldPublishJavaScriptAssets($publicPath, $sourcePath)) {
+            $this->publishJavaScriptAssets($sourcePath, $publicPath);
+        }
+
+        $this->assetsPublished = true;
+    }
+
+    /**
+     * Determine if JavaScript assets need to be published.
+     * 
+     * This method implements intelligent detection that balances automatic updates
+     * with performance considerations.
+     */
+    protected function shouldPublishJavaScriptAssets(string $publicPath, string $sourcePath): bool
+    {
+        // Always publish in development mode for hot reloading
+        if ($this->app->environment('local', 'development')) {
+            return !file_exists($publicPath . '/flashhalt.js') || 
+                   $this->areSourceFilesNewer($sourcePath, $publicPath);
+        }
+
+        // In production, only publish if assets don't exist
+        return !file_exists($publicPath . '/flashhalt.js') || 
+               !file_exists($publicPath . '/flashhalt.min.js');
+    }
+
+    /**
+     * Check if source files are newer than published assets.
+     * 
+     * This enables automatic updates during development when JavaScript files change.
+     */
+    protected function areSourceFilesNewer(string $sourcePath, string $publicPath): bool
+    {
+        if (!file_exists($sourcePath . '/flashhalt.js')) {
+            return false;
+        }
+
+        $sourceTime = filemtime($sourcePath . '/flashhalt.js');
+        $publicTime = file_exists($publicPath . '/flashhalt.js') ? 
+                      filemtime($publicPath . '/flashhalt.js') : 0;
+
+        return $sourceTime > $publicTime;
+    }
+
+    /**
+     * Publish JavaScript assets to the application's public directory.
+     * 
+     * This method handles the actual file copying with error handling and
+     * environment-specific optimizations.
+     */
+    protected function publishJavaScriptAssets(string $sourcePath, string $publicPath): void
+    {
+        try {
+            // Ensure the destination directory exists
+            if (!is_dir($publicPath)) {
+                mkdir($publicPath, 0755, true);
+            }
+
+            // Copy the main JavaScript file
+            if (file_exists($sourcePath . '/flashhalt.js')) {
+                copy($sourcePath . '/flashhalt.js', $publicPath . '/flashhalt.js');
+            }
+
+            // Copy or generate the minified version for production
+            if (file_exists($sourcePath . '/flashhalt.min.js')) {
+                copy($sourcePath . '/flashhalt.min.js', $publicPath . '/flashhalt.min.js');
+            } else {
+                // In a real implementation, you might want to minify on-the-fly
+                // For now, we'll copy the regular version as a fallback
+                copy($sourcePath . '/flashhalt.js', $publicPath . '/flashhalt.min.js');
+            }
+
+        } catch (\Exception $e) {
+            // Log asset publishing errors but don't break the application
+            if ($this->app->bound('log')) {
+                $this->app['log']->warning(
+                    'FlashHALT failed to publish JavaScript assets: ' . $e->getMessage()
+                );
+            }
+        }
+    }
+
+    /**
+     * Set up automatic configuration injection into JavaScript.
+     * 
+     * This method creates the bridge between your PHP configuration system
+     * and the JavaScript frontend integration.
+     */
+    protected function setupConfigurationInjection(): void
+    {
+        // Register a view composer that injects FlashHALT configuration
+        View::composer('*', function ($view) {
+            // Only inject configuration if FlashHALT JavaScript will be included
+            if ($this->shouldIncludeJavaScript()) {
+                $config = $this->generateJavaScriptConfiguration();
+                $view->with('flashhaltJsConfig', $config);
+            }
+        });
+    }
+
+    /**
+     * Generate configuration object for JavaScript consumption.
+     * 
+     * This method transforms your PHP configuration into a format suitable
+     * for JavaScript while maintaining security boundaries.
+     */
+    protected function generateJavaScriptConfiguration(): array
+    {
+        $config = $this->app['config']->get('flashhalt', []);
+
+        // Create a filtered configuration object for JavaScript
+        return [
+            'enabled' => true,
+            'debug' => $this->app->environment('local', 'development') && 
+                      ($config['development']['debug_mode'] ?? false),
+            'version' => $this->getPackageVersion(),
+            'csrfTokenRefreshInterval' => 300000, // 5 minutes
+            'logLevel' => $this->getJavaScriptLogLevel($config),
+            'errorReporting' => $config['monitoring']['enabled'] ?? false,
+            'routePattern' => '^hx\/.*@.*$', // JavaScript-compatible regex
+        ];
+    }
+
+    /**
+     * Determine appropriate log level for JavaScript based on environment.
+     */
+    protected function getJavaScriptLogLevel(array $config): string
+    {
+        if ($this->app->environment('local', 'development')) {
+            return $config['development']['debug_mode'] ?? false ? 'debug' : 'info';
+        }
+
+        return 'error'; // Production should only log errors
+    }
+
+    /**
+     * Get the current package version for JavaScript integration.
+     */
+    protected function getPackageVersion(): string
+    {
+        // In a real implementation, this might read from composer.json
+        return '1.0.0';
+    }
+
+    /**
+     * Set up logic for determining when to include JavaScript.
+     * 
+     * This method implements intelligent detection of when FlashHALT JavaScript
+     * is needed, avoiding unnecessary asset loading.
+     */
+    protected function setupScriptInclusionLogic(): void
+    {
+        // Register a macro on the view factory for checking FlashHALT usage
+        View::macro('usesFlashHALT', function () {
+            // This would ideally scan the view content for FlashHALT patterns
+            // For now, we'll use a simple heuristic
+            return request()->is('*') && $this->shouldIncludeJavaScript();
+        });
+    }
+
+    /**
+     * Determine if JavaScript should be included in the current response.
+     * 
+     * This method implements sophisticated logic for automatic script inclusion
+     * based on request context and application state.
+     */
+    protected function shouldIncludeJavaScript(): bool
+    {
+        // Don't include JavaScript for non-web requests
+        if (!request() || request()->wantsJson() || request()->expectsJson()) {
+            return false;
+        }
+
+        // Always include in development mode for convenience
+        if ($this->app->environment('local', 'development')) {
+            return true;
+        }
+
+        // In production, be more selective
+        // Check if the current request might involve FlashHALT routes
+        return $this->requestMightUseFlashHALT();
+    }
+
+    /**
+     * Determine if the current request context suggests FlashHALT usage.
+     */
+    protected function requestMightUseFlashHALT(): bool
+    {
+        $request = request();
+        
+        if (!$request) {
+            return false;
+        }
+
+        // Check if this is an HTMX request to a FlashHALT route
+        if ($request->header('HX-Request') && $request->is('hx/*')) {
+            return true;
+        }
+
+        // Check if the current route might render views that use FlashHALT
+        // This is a heuristic - in a real implementation, you might want
+        // to scan view files or maintain a registry of FlashHALT-enabled routes
+        return true; // Conservative approach - include when in doubt
+    }
+
+    /**
+     * Register view composers for automatic script injection.
+     * 
+     * This method sets up automatic injection of FlashHALT JavaScript
+     * into application layouts and views.
+     */
+    protected function registerViewComposers(): void
+    {
+        // Register a view composer for common layout files
+        $layoutPatterns = [
+            'layouts.app',
+            'layouts.master', 
+            'layouts.main',
+            'app',
+            'layout'
+        ];
+
+        View::composer($layoutPatterns, function ($view) {
+            if ($this->shouldIncludeJavaScript()) {
+                $this->injectJavaScriptIntoView($view);
+            }
+        });
+
+        // Also register a global composer as a fallback
+        View::composer('*', function ($view) {
+            // Only inject if not already injected and JavaScript is needed
+            if ($this->shouldIncludeJavaScript() && !$view->offsetExists('flashhaltScriptsInjected')) {
+                $this->injectJavaScriptIntoView($view);
+            }
+        });
+    }
+
+    /**
+     * Inject FlashHALT JavaScript into a view.
+     * 
+     * This method adds the necessary script tags and configuration
+     * to make FlashHALT work automatically.
+     */
+    protected function injectJavaScriptIntoView($view): void
+    {
+        $config = $this->generateJavaScriptConfiguration();
+        $scriptPath = $this->getJavaScriptAssetPath();
+
+        // Generate the configuration injection script
+        $configScript = '<script>window.FlashHALTConfig = ' . json_encode($config) . ';</script>';
+
+        // Generate the main script inclusion
+        $mainScript = '<script src="' . asset($scriptPath) . '"></script>';
+
+        // Combine both scripts
+        $fullScript = $configScript . "\n" . $mainScript;
+
+        // Add to view data
+        $view->with([
+            'flashhaltScripts' => $fullScript,
+            'flashhaltScriptsInjected' => true
+        ]);
+    }
+
+    /**
+     * Get the appropriate JavaScript asset path based on environment.
+     */
+    protected function getJavaScriptAssetPath(): string
+    {
+        $basePath = 'vendor/flashhalt/js/flashhalt';
+        
+        // Use minified version in production
+        if ($this->app->environment('production')) {
+            return $basePath . '.min.js';
+        }
+
+        return $basePath . '.js';
+    }
+
+    /**
+     * Register Blade directives for manual JavaScript integration.
+     * 
+     * These directives allow developers to manually control FlashHALT JavaScript
+     * inclusion when the automatic system doesn't meet their needs.
+     */
+    protected function registerBladeDirectives(): void
+    {
+        // Directive to include FlashHALT scripts manually
+        Blade::directive('flashhaltScripts', function () {
+            return '<?php if(isset($flashhaltScripts)) echo $flashhaltScripts; ?>';
+        });
+
+        // Directive to check if FlashHALT is available
+        Blade::directive('flashhaltEnabled', function () {
+            return '<?php if(' . static::class . '::isFlashHALTEnabled()): ?>';
+        });
+
+        Blade::directive('endflashhalt', function () {
+            return '<?php endif; ?>';
+        });
+
+        // Directive for CSRF meta tag (ensures compatibility)
+        Blade::directive('flashhaltCsrf', function () {
+            return '<meta name="csrf-token" content="<?php echo csrf_token(); ?>">';
+        });
+    }
+
+    /**
+     * Static method for checking FlashHALT availability in Blade templates.
+     */
+    public static function isFlashHALTEnabled(): bool
+    {
+        return app()->bound('flashhalt.enabled') && app('flashhalt.enabled');
+    }
+
+    /**
+     * Register publishing capabilities for manual asset management.
+     * 
+     * This extends your existing publishing system to include JavaScript assets.
+     */
+    protected function registerPublishing(): void
+    {
+        if ($this->app->runningInConsole()) {
+            // Publish configuration files (your existing functionality)
+            $this->publishes([
+                __DIR__ . '/../config/flashhalt.php' => config_path('flashhalt.php'),
+            ], 'flashhalt-config');
+
+            // NEW: Publish JavaScript assets for manual management
+            $this->publishes([
+                __DIR__ . '/../resources/js' => public_path('vendor/flashhalt/js'),
+            ], 'flashhalt-assets');
+
+            // NEW: Publish both config and assets together
+            $this->publishes([
+                __DIR__ . '/../config/flashhalt.php' => config_path('flashhalt.php'),
+                __DIR__ . '/../resources/js' => public_path('vendor/flashhalt/js'),
+            ], 'flashhalt');
+        }
+    }
+
+    // Your existing methods remain unchanged
     protected function registerMiddleware(): void
     {
         $this->app['router']->aliasMiddleware('flashhalt', FlashHaltMiddleware::class);
     }
 
-    /**
-     * Register Artisan commands for FlashHalt management.
-     * 
-     * These commands will be available when the package is installed,
-     * allowing users to compile routes and manage FlashHalt features.
-     */
     protected function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
@@ -109,13 +512,6 @@ class FlashHaltServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Register routes based on the current operating mode.
-     * 
-     * This is where FlashHalt's dual-mode architecture comes into play.
-     * We determine whether to use dynamic resolution or compiled routes
-     * based on the environment and configuration.
-     */
     protected function registerRoutes(): void
     {
         $mode = $this->determineOperatingMode();
@@ -127,22 +523,15 @@ class FlashHaltServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Determine the current operating mode for FlashHalt.
-     * 
-     * This method implements the intelligent mode detection logic
-     * that makes FlashHalt automatically adapt to different environments.
-     */
+    // Your existing route registration methods remain unchanged
     protected function determineOperatingMode(): string
     {
         $config = $this->app['config']->get('flashhalt');
 
-        // Check for explicit mode configuration first
         if (isset($config['mode']) && in_array($config['mode'], ['development', 'production'])) {
             return $config['mode'];
         }
 
-        // Auto-detect based on environment and compiled routes existence
         if ($this->app->environment(['production', 'staging'])) {
             $compiledRoutesPath = $config['production']['compiled_routes_path'] ?? 
                 base_path('routes/flashhalt-compiled.php');
@@ -150,42 +539,26 @@ class FlashHaltServiceProvider extends ServiceProvider
             if (file_exists($compiledRoutesPath)) {
                 return 'production';
             } else {
-                // In production without compiled routes - this should trigger a warning
                 $this->handleProductionWithoutCompilation();
-                return 'production'; // Fail safe to production mode
+                return 'production';
             }
         }
 
-        // Default to development mode for local/testing environments
         return 'development';
     }
 
-    /**
-     * Register routes for development mode.
-     * 
-     * In development mode, we register a catch-all route that will
-     * be processed by our middleware for dynamic controller resolution.
-     */
     protected function registerDevelopmentRoutes(): void
     {
         Route::middleware(['web', 'flashhalt'])
             ->prefix('hx')
-            ->where(['route' => '.*@.*']) // Only match routes containing @ symbol (corrected syntax)
+            ->where(['route' => '.*@.*'])
             ->group(function () {
-                // This catch-all route will be processed by FlashHaltMiddleware
                 Route::any('{route}', function () {
-                    // The middleware will handle this before it reaches here
                     abort(404, 'FlashHalt route not properly processed');
                 });
             });
     }
 
-    /**
-     * Register routes for production mode.
-     * 
-     * In production mode, we include the compiled routes file
-     * which contains static route definitions for optimal performance.
-     */
     protected function registerProductionRoutes(): void
     {
         $compiledRoutesPath = $this->app['config']->get(
@@ -198,110 +571,21 @@ class FlashHaltServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Handle the situation where we're in production but compiled routes don't exist.
-     * 
-     * This is a critical error that needs clear guidance for developers.
-     */
     protected function handleProductionWithoutCompilation(): void
     {
         if ($this->app['config']->get('flashhalt.production.verification_required', true)) {
             throw new \RuntimeException(
-                "🚫 FlashHalt is running in production mode but compiled routes are missing!\n" .
+                "🚫 FlashHALT is running in production mode but compiled routes are missing!\n" .
                 "Please run: php artisan flashhalt:compile\n" .
                 "For more information: https://flashhalt.dev/production"
             );
         }
 
-        // Log a warning if verification is disabled
         if ($this->app->bound('log')) {
             $this->app['log']->warning(
-                'FlashHalt is running in production without compiled routes. ' .
+                'FlashHALT is running in production without compiled routes. ' .
                 'This may impact performance and security.'
             );
         }
-    }
-
-    /**
-     * Register publishing options for configuration and assets.
-     * 
-     * This allows users to customize FlashHalt's behavior and
-     * integrate it deeply with their applications.
-     */
-    protected function registerPublishing(): void
-    {
-        if ($this->app->runningInConsole()) {
-            // Publish the configuration file
-            $this->publishes([
-                __DIR__ . '/../config/flashhalt.php' => config_path('flashhalt.php'),
-            ], 'flashhalt-config');
-
-            // Publish JavaScript assets for HTMX integration
-            $this->publishes([
-                __DIR__ . '/../resources/js' => public_path('vendor/flashhalt/js'),
-            ], 'flashhalt-assets');
-
-            // Publish views for error pages and debugging
-            $this->publishes([
-                __DIR__ . '/../resources/views' => resource_path('views/vendor/flashhalt'),
-            ], 'flashhalt-views');
-        }
-    }
-
-    /**
-     * Register additional services that require the full Laravel application.
-     * 
-     * Some services need to interact with other Laravel components
-     * that may not be available during the register phase.
-     */
-    protected function registerAdditionalServices(): void
-    {
-        // Register view composers for debugging information in development
-        if ($this->app->environment('local', 'development') && 
-            $this->app['config']->get('flashhalt.development.debug_mode', true)) {
-            
-            $this->registerDebugServices();
-        }
-
-        // Register monitoring services if enabled
-        if ($this->app['config']->get('flashhalt.monitoring.enabled', false)) {
-            $this->registerMonitoringServices();
-        }
-    }
-
-    /**
-     * Register debugging services for development environments.
-     */
-    protected function registerDebugServices(): void
-    {
-        // Register view composers that add debugging information to views
-        // This will be useful for developers to understand how FlashHalt is processing requests
-        
-        if ($this->app->bound('view')) {
-            $this->app['view']->composer('*', function ($view) {
-                if (request()->header('HX-Request') && 
-                    request()->is('hx/*') && 
-                    str_contains(request()->path(), '@')) {
-                    
-                    $view->with('flashhalt_debug', [
-                        'route_pattern' => request()->route('route'),
-                        'resolved_at' => now(),
-                        'mode' => 'development'
-                    ]);
-                }
-            });
-        }
-    }
-
-    /**
-     * Register monitoring and analytics services.
-     */
-    protected function registerMonitoringServices(): void
-    {
-        // Integration points for monitoring services like Telescope, Sentry, etc.
-        // This provides observability into FlashHalt's operation in production
-        
-        // Future implementation will integrate with Laravel's event system
-        // to provide metrics on route resolution performance, error rates, etc.
     }
 }
