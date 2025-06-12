@@ -1,25 +1,40 @@
 {
-    "name": "dancycodes/flashhalt",
-    "description": "FlashHALT eliminates route definition overhead for HTMX applications, enabling direct controller method access through intuitive URL conventions - delivering 10x faster development velocity while maintaining Laravel's architectural integrity.",
-    "type": "package",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "DancyCodes\\FlashHalt\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "DancyCodes\\FlashHalt\\FlashHaltServiceProvider"
-            ]
-        }
-    },
-    "authors": [
-        {
-            "name": "Gouater Loic Dimitri"
-        }
-    ],
-    "minimum-stability": "beta",
-    "require": {}
+  "name": "dancycodes/flashhalt",
+  "description": "FlashHALT eliminates route definition overhead for HTMX applications, enabling direct controller method access through intuitive URL conventions - delivering 10x faster development velocity while maintaining Laravel's architectural integrity.",
+  "type": "package",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "DancyCodes\\FlashHalt\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "DancyCodes\\FlashHalt\\FlashHaltServiceProvider"
+      ]
+    }
+  },
+  "authors": [
+    {
+      "name": "Gouater Loic Dimitri"
+    }
+  ],
+  "minimum-stability": "beta",
+  "require": {},
+  "require-dev": {
+    "orchestra/testbench": "^9.0",
+    "phpunit/phpunit": "^10.0",
+    "mockery/mockery": "^1.6",
+    "illuminate/testing": "^11.0"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DancyCodes\\FlashHalt\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+  }
 }
