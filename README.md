@@ -8,816 +8,1022 @@
 
 FlashHALT is a Laravel package that transforms how you build HTMX applications by introducing convention-based routing patterns. Instead of defining individual routes for every HTMX interaction, you can access controller methods directly through intuitive URL patterns.
 
-## Table of Contents
+## The Problem That FlashHALT Solves
 
-- [What Makes FlashHALT Different](#what-makes-flashhalt-different)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Core Concepts](#core-concepts)
-- [Request Parameters](#request-parameters)
-- [Blade Directives](#blade-directives)
-- [Configuration](#configuration)
-- [Console Commands](#console-commands)
-- [Security](#security)
-- [Performance](#performance)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Development Status](#development-status)
-- [Contributing](#contributing)
-- [License](#license)
+When building HTMX applications in Laravel, you face two major friction points that slow down development and create maintenance headaches.
 
-## What Makes FlashHALT Different
+**First, the Route Definition Tax.** Every single HTMX interaction requires you to stop what you're doing, switch to your routes file, and manually define a route. Want to add a simple "mark as complete" button to your todo app? You need to write a route. Want to load user details in a modal? Another route. Need to update a comment inline? Yet another route. This constant context switching destroys your flow state and turns simple features into multi-file modifications.
 
-Traditional Laravel HTMX development requires you to define a route for every endpoint:
+**Second, the CSRF Token Nightmare.** Laravel's CSRF protection is essential for security, but it creates a painful developer experience in HTMX applications. You must remember to add `@csrf` to every form, manually include `_token` in `hx-vals` for button clicks, or configure `X-CSRF-TOKEN` headers. Miss any one of these, and your request fails with a cryptic 419 error. This isn't just annoying - it's error-prone and creates security vulnerabilities when developers skip CSRF protection out of frustration.
+
+Here's what typical HTMX development looks like in Laravel:
 
 ```php
-// Traditional approach - verbose and repetitive
-Route::get('/users', [UserController::class, 'index']);
-Route::post('/users', [UserController::class, 'store']);
-Route::get('/users/{user}', [UserController::class, 'show']);
-Route::put('/users/{user}', [UserController::class, 'update']);
-Route::delete('/users/{user}', [UserController::class, 'destroy']);
-Route::get('/admin/users', [Admin\UserController::class, 'index']);
-// ... dozens more routes
+// routes/web.php - You have to define every single endpoint
+Route::get('/tasks', [TaskController::class, 'index']);
+Route::post('/tasks', [TaskController::class, 'store']);
+Route::patch('/tasks/{task}/complete', [TaskController::class, 'markComplete']);
+Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+Route::get('/tasks/{task}/edit', [TaskController::class, 'edit']);
+Route::patch('/tasks/{task}', [TaskController::class, 'update']);
+// And this is just for ONE resource! Multiply by every feature...
 ```
 
-With FlashHALT, you replace all of this with convention-based URLs:
-
 ```html
-<!-- FlashHALT approach - intuitive and streamlined -->
-<button hx-get="hx/users@index" hx-target="#content">Load Users</button>
-<form hx-post="hx/users@store" hx-target="#users-list">
-  <!-- form fields -->
+<!-- Then in your templates, CSRF management becomes your responsibility -->
+<form hx-post="/tasks">
+  @csrf
+  <!-- Must remember this in every form -->
+  <input type="text" name="title" placeholder="New task" />
+  <button type="submit">Add Task</button>
 </form>
-<button hx-put="hx/users@update" hx-target="#user-123">Update User</button>
-<button hx-delete="hx/users@destroy" hx-target="#user-123">Delete User</button>
-<div hx-get="hx/admin.users@index" hx-trigger="load">Admin Users</div>
+
+<button
+  hx-patch="/tasks/{{ $task->id }}/complete"
+  hx-vals='{"_token": "{{ csrf_token() }}"}'
+>
+  <!-- Manual token management -->
+  Mark Complete
+</button>
+
+<button
+  hx-delete="/tasks/{{ $task->id }}"
+  hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'
+>
+  <!-- Or header approach -->
+  Delete
+</button>
 ```
 
-FlashHALT's intelligent controller resolution system dynamically maps these patterns to your existing Laravel controllers while maintaining full security, performance, and Laravel ecosystem compatibility.
+This approach has several problems. You're constantly switching between files, manually managing CSRF tokens, and the route definitions don't provide any meaningful organization - they're just a flat list of endpoints that grows unwieldy over time.
 
-## Installation
+## How FlashHALT Transforms Your Workflow
 
-Install FlashHALT via Composer:
+FlashHALT introduces a fundamentally different approach that eliminates both friction points simultaneously. Instead of defining routes, you use intuitive URL patterns that directly reference your controller methods. Instead of manually managing CSRF tokens, FlashHALT automatically handles them for you.
 
-```bash
-composer require dancycodes/flashhalt
+Here's the same functionality with FlashHALT:
+
+```php
+// routes/web.php - Completely empty! No routes needed.
 ```
-
-The package will be auto-discovered by Laravel. Publish the configuration file:
-
-```bash
-php artisan vendor:publish --provider="DancyCodes\FlashHalt\FlashHaltServiceProvider" --tag="config"
-```
-
-This creates `config/flashhalt.php` where you can customize FlashHALT's behavior.
-
-### HTMX Integration
-
-FlashHALT is designed to work seamlessly with HTMX. Install HTMX in your Laravel application:
-
-```bash
-npm install htmx.org
-```
-
-Add HTMX to your `resources/js/app.js`:
-
-```javascript
-import "htmx.org";
-window.htmx = require("htmx.org");
-```
-
-Or include it via CDN in your layout:
 
 ```html
-<script src="https://unpkg.com/htmx.org@1.9.8"></script>
+<!-- Include FlashHALT once in your layout -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    @flashhaltCsrf
+    <!-- This adds the csrf meta tag.-->
+    @flashhaltScripts
+    <!-- This single line handles ALL CSRF automatically -->
+  </head>
+  <body>
+    <!-- Now your templates become incredibly clean -->
+    <form hx-post="hx/tasks@store">
+      <!-- No @csrf needed! FlashHALT handles it automatically -->
+      <input type="text" name="title" placeholder="New task" />
+      <button type="submit">Add Task</button>
+    </form>
+
+    <button
+      hx-patch="hx/tasks@markComplete"
+      hx-vals='{"task": {{ $task->id }}}'
+    >
+      <!-- No manual _token needed! Automatic CSRF injection -->
+      Mark Complete
+    </button>
+
+    <button hx-delete="hx/tasks@destroy" hx-vals='{"task": {{ $task->id }}}'>
+      <!-- Every request gets CSRF protection automatically -->
+      Delete
+    </button>
+  </body>
+</html>
 ```
 
-### Recommended: Maurizio Laravel HTMX Package
+Notice what just happened. We eliminated the entire routes file and removed all manual CSRF token management. The URL patterns like `hx/tasks@store` directly reference your controller methods, making the code self-documenting. Most importantly, you never have to think about CSRF tokens again - FlashHALT automatically injects them into every non-GET request.
 
-For enhanced HTMX functionality, we strongly recommend installing the excellent Maurizio Laravel HTMX package alongside FlashHALT:
+## Understanding FlashHALT's URL Convention
 
-```bash
-composer require mauricius/laravel-htmx
+FlashHALT uses a simple but powerful URL pattern that maps directly to Laravel's controller structure. Let me walk you through how this works, because understanding this pattern is key to using FlashHALT effectively.
+
+The basic pattern is `hx/{controller}@{method}`. Think of the `hx/` prefix as FlashHALT's namespace - it tells the system "this request should be handled by FlashHALT's dynamic routing." The `@` symbol separates the controller from the method, making it clear which method you're calling.
+
+**Simple Controller Mapping:**
+
+```
+hx/task@index     → App\Http\Controllers\TaskController::index()
+hx/user@show      → App\Http\Controllers\UserController::show()
+hx/post@destroy   → App\Http\Controllers\PostController::destroy()
 ```
 
-This package provides powerful HTMX request and response helpers that complement FlashHALT perfectly:
+FlashHALT automatically handles Laravel's controller naming conventions. Whether your controller is named `Task`, `TaskController`, `Tasks`, or `TasksController`, FlashHALT will find it. This flexibility means you don't need to remember exact naming - just use what feels natural.
+
+**Namespace Support with Dots:**
+For controllers in subdirectories, use dots to represent folder separators:
+
+```
+hx/admin.users@index     → App\Http\Controllers\Admin\UserController::index()
+hx/api.v1.posts@show     → App\Http\Controllers\Api\V1\PostController::show()
+hx/billing.invoices@pdf  → App\Http\Controllers\Billing\InvoiceController::pdf()
+```
+
+This dot notation makes your template code highly readable. When you see `hx/admin.users@index`, you immediately know you're calling the index method on the UserController in the Admin namespace.
+
+**Parameter Passing:**
+FlashHALT works seamlessly with Laravel's route model binding and parameter injection:
+
+```html
+<!-- Pass parameters via hx-vals (FlashHALT automatically includes CSRF) -->
+<button hx-delete="hx/task@destroy" hx-vals='{"task": {{ $task->id }}}'>
+  Delete Task
+</button>
+
+<!-- Or via form fields -->
+<form hx-patch="hx/users@update">
+  <input type="hidden" name="user" value="{{ $user->id }}" />
+  <input type="text" name="name" value="{{ $user->name }}" />
+  <button type="submit">Update User</button>
+</form>
+```
+
+Your controller methods receive these parameters exactly as they would with traditional routes:
 
 ```php
-use Mauricius\LaravelHtmx\Http\HtmxRequest;
-use Mauricius\LaravelHtmx\Http\HtmxResponse;
-
-class UserController extends Controller
+public function destroy(Task $task)  // Automatic model binding works perfectly
 {
-    public function index(HtmxRequest $request)
-    {
-        $users = User::all();
+    $this->authorize('delete', $task);  // Authorization works normally
+    $task->delete();
+    return '';  // Return empty string to remove the element
+}
 
-        if ($request->isHtmxRequest()) {
-            return view('users.index-partial', compact('users'));
-        }
-
-        return view('users.index', compact('users'));
-    }
-
-    public function store(HtmxRequest $request)
-    {
-        // Handle user creation...
-
-        return with(new HtmxResponse())
-            ->addTrigger("userCreated")
-            ->pushUrl("/users");
-    }
+public function update(Request $request, User $user)  // Multiple parameters work fine
+{
+    $user->update($request->validated());
+    return view('users.profile', compact('user'));
 }
 ```
 
-## Quick Start
+## The CSRF Magic: Never Think About Tokens Again
 
-After installation, FlashHALT works immediately with zero configuration. Create a simple controller:
+This is where FlashHALT truly shines and saves you countless hours of frustration. Traditional HTMX development requires you to manually manage CSRF tokens for every single non-GET request. FlashHALT completely eliminates this burden.
 
-```php
-<?php
+**The Traditional CSRF Pain:**
 
-namespace App\Http\Controllers;
+```html
+<!-- Traditional approach - error-prone and tedious -->
+<form hx-post="/users">
+  @csrf
+  <!-- Must remember this in every form -->
+  <input type="text" name="name" />
+</form>
 
-use Illuminate\Http\Request;
+<button hx-delete="/users/123" hx-vals='{"_token": "{{ csrf_token() }}"}'>
+  <!-- Manual token in every button -->
+  Delete
+</button>
 
-class UserController extends Controller
-{
-    public function index()
-    {
-        $users = User::all();
-        return view('users.index', compact('users'));
-    }
-
-    public function store(Request $request)
-    {
-        $user = User::create($request->validated());
-        return view('users.show', compact('user'));
-    }
-
-    public function show(User $user)
-    {
-        return view('users.show', compact('user'));
-    }
-}
+<div
+  hx-patch="/users/123/favorite"
+  hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'
+>
+  <!-- Or header approach -->
+  Add to Favorites
+</div>
 ```
 
-Now use FlashHALT in your Blade templates:
+**The FlashHALT Way - Completely Automatic:**
 
 ```html
 <!DOCTYPE html>
 <html>
   <head>
-    <title>FlashHALT Demo</title>
-    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    @flashhaltCsrf
+    <!-- This adds the csrf meta tag.-->
     @flashhaltScripts
+    <!-- This single line enables automatic CSRF for everything -->
   </head>
   <body>
-    <div id="content">
-      <!-- Load users list on page load -->
-      <div
-        hx-get="hx/users@index"
-        hx-trigger="load"
-        hx-target="#users-container"
-      >
-        Loading users...
-      </div>
+    <!-- Now every FlashHALT request gets CSRF protection automatically -->
+    <form hx-post="hx/users@store">
+      <!-- No @csrf needed! -->
+      <input type="text" name="name" />
+    </form>
 
-      <!-- Create new user form -->
-      <form hx-post="hx/users@store" hx-target="#users-container">
-        @csrf
-        <input type="text" name="name" placeholder="User name" required />
-        <input type="email" name="email" placeholder="Email" required />
-        <button type="submit">Create User</button>
-      </form>
+    <button hx-delete="hx/users@destroy" hx-vals='{"user": 123}'>
+      <!-- No _token needed! -->
+      Delete
+    </button>
 
-      <div id="users-container"></div>
+    <div hx-patch="hx/users@toggleFavorite" hx-vals='{"user": 123}'>
+      <!-- No X-CSRF-TOKEN needed! -->
+      Add to Favorites
     </div>
   </body>
 </html>
 ```
 
-That's it! FlashHALT automatically handles the routing, security validation, and controller method execution.
+**How the CSRF Magic Works:**
+When you include `@flashhaltCsrf` and `@flashhaltScripts`, FlashHALT installs a JavaScript interceptor that automatically detects FlashHALT requests (those starting with `hx/`) and intelligently injects CSRF tokens. For form submissions, it adds the token as a form field. For button clicks and other requests, it includes the token in the request headers. This happens completely transparently - you never see it, never think about it, but you're always protected.
 
-## Core Concepts
+This automatic CSRF injection means you can focus entirely on building features instead of wrestling with security boilerplate. It also eliminates a major source of bugs - how many times have you spent minutes debugging a 419 error only to realize you forgot a CSRF token?
 
-### Convention-Based URL Patterns
+## Installation and Immediate Setup
 
-FlashHALT uses intuitive URL patterns that map directly to your Laravel controllers:
+Getting started with FlashHALT takes less than two minutes. Let me walk you through each step so you can start building immediately.
 
-**Basic Pattern:** `hx/controller@method`
+**Step 1: Install the Package**
 
-```html
-<button hx-get="hx/users@index">Load Users</button>
-<form hx-post="hx/users@store">Create User</form>
-<button hx-put="hx/users@update">Update User</button>
-<button hx-delete="hx/users@destroy">Delete User</button>
+```bash
+composer require dancycodes/flashhalt
 ```
 
-**Namespaced Controllers:** `hx/namespace.controller@method`
+Laravel's auto-discovery automatically registers FlashHALT's service provider, so no manual configuration is needed.
 
-```html
-<div hx-get="hx/admin.users@index">Admin Users</div>
-<button hx-post="hx/api.v1.posts@store">Create Post</button>
-<div hx-get="hx/billing.invoices@show">Show Invoice</div>
-```
-
-**Deep Namespaces:** Support for multiple namespace levels
-
-```html
-<div hx-get="hx/api.v2.admin.reports@generate">Generate Report</div>
-<button hx-post="hx/dashboard.analytics.metrics@calculate">
-  Calculate Metrics
-</button>
-```
-
-### Controller Resolution Process
-
-FlashHALT's controller resolution follows a sophisticated multi-step process:
-
-1. **Pattern Analysis**: Parses the URL pattern to extract controller and method information
-2. **Namespace Resolution**: Converts dot notation to proper PHP namespaces (admin.users → Admin\UsersController)
-3. **Security Validation**: Ensures the target controller and method are safe to access
-4. **Controller Instantiation**: Creates controller instances through Laravel's service container
-5. **Method Execution**: Calls the controller method with proper parameter binding
-6. **Response Processing**: Optimizes the response for HTMX compatibility
-
-### Operating Modes
-
-FlashHALT operates in two distinct modes:
-
-**Development Mode** (default in local environments):
-
-- Dynamic controller resolution for maximum flexibility
-- Real-time route pattern validation
-- Comprehensive error reporting with suggestions
-- Performance monitoring and debugging tools
-
-**Production Mode** (automatically activated in production):
-
-- Pre-compiled static routes for maximum performance
-- Enhanced security through static analysis
-- Optimized caching and minimal overhead
-- Robust error handling
-
-## Request Parameters
-
-FlashHALT seamlessly integrates with HTMX's parameter passing mechanisms. All request parameters should be sent using standard HTMX attributes.
-
-### Using hx-vals for Simple Data
-
-Pass simple key-value data using `hx-vals`:
-
-```html
-<!-- Static values -->
-<button
-  hx-post="hx/users@updateStatus"
-  hx-vals='{"status": "active", "notify": true}'
-  hx-target="#user-status"
->
-  Activate User
-</button>
-
-<!-- Dynamic values with JavaScript -->
-<button
-  hx-post="hx/posts@toggleFavorite"
-  hx-vals="js:{postId: getPostId(), timestamp: Date.now()}"
-  hx-target="#favorite-btn"
->
-  Toggle Favorite
-</button>
-```
-
-```php
-// Controller receives values normally
-public function updateStatus(Request $request, User $user)
-{
-    $status = $request->input('status'); // 'active'
-    $notify = $request->boolean('notify'); // true
-
-    $user->update(['status' => $status]);
-
-    if ($notify) {
-        // Send notification...
-    }
-
-    return view('users.status', compact('user'));
-}
-```
-
-### Using hx-include for Form Data
-
-Include form data using `hx-include`:
-
-```html
-<form id="user-form">
-  <input type="text" name="name" value="John Doe" />
-  <input type="email" name="email" value="john@example.com" />
-  <input type="hidden" name="department_id" value="5" />
-</form>
-
-<!-- Include entire form -->
-<button
-  hx-put="hx/users@update"
-  hx-include="#user-form"
-  hx-target="#user-details"
->
-  Update User
-</button>
-
-<!-- Include closest form -->
-<form>
-  <input type="text" name="title" placeholder="Post title" />
-  <textarea name="content" placeholder="Post content"></textarea>
-  <button
-    hx-post="hx/posts@store"
-    hx-include="closest form"
-    hx-target="#posts-list"
-  >
-    Create Post
-  </button>
-</form>
-```
-
-### Using hx-params for Parameter Control
-
-Control which parameters are sent using `hx-params`:
-
-```html
-<!-- Send all parameters (default) -->
-<form hx-post="hx/users@store" hx-params="*">
-  <input type="text" name="name" />
-  <input type="email" name="email" />
-  <input type="password" name="password" />
-</form>
-
-<!-- Send only specific parameters -->
-<form hx-patch="hx/users@updateEmail" hx-params="email">
-  <input type="text" name="name" value="John Doe" />
-  <input type="email" name="email" value="new@example.com" />
-  <!-- Only email will be sent -->
-</form>
-```
-
-### CSRF Protection
-
-FlashHALT automatically handles Laravel's CSRF protection when you use the included JavaScript:
-
-```html
-<meta name="csrf-token" content="{{ csrf_token() }}" />
-@flashhaltScripts
-
-<!-- Or include in individual forms -->
-<form hx-post="hx/users@store">
-  @csrf
-  <input type="text" name="name" required />
-  <button type="submit">Create User</button>
-</form>
-```
-
-## Blade Directives
-
-FlashHALT provides several Blade directives to enhance your development experience:
-
-### @flashhaltScripts
-
-Includes the FlashHALT JavaScript integration automatically:
+**Step 2: Add HTMX and FlashHALT to Your Layout**
 
 ```html
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My App</title>
+    <title>Your App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Include HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+
+    <!-- This adds the csrf meta tag.-->
+    @flashhaltCsrf
+
+    <!-- This single line enables FlashHALT with automatic CSRF -->
     @flashhaltScripts
   </head>
   <body>
-    <!-- Your content -->
+    @yield('content')
   </body>
 </html>
 ```
 
-This directive automatically:
+That's it! FlashHALT is now active and every FlashHALT request will automatically include CSRF protection.
 
-- Includes the FlashHALT JavaScript file
-- Configures CSRF token handling
-- Sets up request interception for FlashHALT routes
-- Provides debugging information in development mode
+**Step 3 (Optional): Publish Configuration**
 
-### @flashhaltEnabled / @endflashhalt
-
-Create conditional blocks that only appear when FlashHALT is available:
-
-```html
-@flashhaltEnabled
-<button hx-get="hx/users@index" hx-target="#content">
-  Load Users with FlashHALT
-</button>
-@endflashhalt
-
-<noscript>
-  <a href="/users">Load Users (fallback)</a>
-</noscript>
+```bash
+php artisan vendor:publish --provider="DancyCodes\FlashHalt\FlashHaltServiceProvider" --tag="config"
 ```
 
-### @flashhaltCsrf
+This creates `config/flashhalt.php` where you can customize security settings, but the defaults work perfectly for most applications.
 
-A convenient way to include the CSRF meta tag:
+## Your First FlashHALT Feature: A Complete Example
 
-```html
-<head>
-  <title>My App</title>
-  @flashhaltCsrf
-  <!-- Equivalent to: <meta name="csrf-token" content="{{ csrf_token() }}"> -->
-</head>
-```
+Let me show you how to build a complete feature using FlashHALT. We'll create a simple task manager that demonstrates all the key concepts. This example will help you understand how FlashHALT transforms your development workflow.
 
-## Configuration
-
-FlashHALT provides extensive configuration options through `config/flashhalt.php`:
-
-### Operating Mode
+**Create the Controller (Standard Laravel)**
 
 ```php
-'mode' => env('FLASHHALT_MODE', 'development'),
+<?php
+// app/Http/Controllers/TaskController.php
+namespace App\Http\Controllers;
+
+use App\Models\Task;
+use Illuminate\Http\Request;
+
+class TaskController extends Controller
+{
+    public function index()
+    {
+        // Load all tasks and return the list view
+        $tasks = Task::orderBy('created_at', 'desc')->get();
+        return view('tasks.index', compact('tasks'));
+    }
+
+    public function store(Request $request)
+    {
+        // Validate and create a new task
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string'
+        ]);
+
+        $task = Task::create($validated);
+
+        // Return just the new task HTML to be inserted
+        return view('tasks.task-item', compact('task'));
+    }
+
+    public function toggle(Task $task)
+    {
+        // Toggle completion status
+        $task->update(['completed' => !$task->completed]);
+
+        // Return the updated task HTML
+        return view('tasks.task-item', compact('task'));
+    }
+
+    public function destroy(Task $task)
+    {
+        $task->delete();
+
+        // Return empty string to remove the element
+        return '';
+    }
+}
 ```
 
-- `'development'` - Dynamic resolution with helpful debugging
-- `'production'` - Pre-compiled routes for maximum performance
+**Create the Views**
 
-### Development Configuration
+```html
+<!-- resources/views/tasks/index.blade.php -->
+@extends('layouts.app') @section('content')
+<div class="container mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-6">Task Manager</h1>
+
+  <!-- Add new task form -->
+  <div class="mb-8 p-4 bg-gray-50 rounded">
+    <form
+      hx-post="hx/task@store"
+      hx-target="#task-list"
+      hx-swap="afterbegin"
+      hx-reset="true"
+    >
+      <!-- Notice: No @csrf needed! FlashHALT handles it automatically -->
+
+      <div class="mb-4">
+        <input
+          type="text"
+          name="title"
+          placeholder="What needs to be done?"
+          required
+          class="w-full p-2 border rounded"
+        />
+      </div>
+
+      <div class="mb-4">
+        <textarea
+          name="description"
+          placeholder="Description (optional)"
+          class="w-full p-2 border rounded"
+        ></textarea>
+      </div>
+
+      <button
+        type="submit"
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Add Task
+      </button>
+    </form>
+  </div>
+
+  <!-- Task list -->
+  <div id="task-list" class="space-y-2">
+    @foreach($tasks as $task) @include('tasks.task-item', ['task' => $task])
+    @endforeach
+  </div>
+</div>
+@endsection
+```
+
+```html
+<!-- resources/views/tasks/task-item.blade.php -->
+<div
+  class="task-item p-4 border rounded {{ $task->completed ? 'bg-green-50' : 'bg-white' }}"
+  id="task-{{ $task->id }}"
+>
+  <div class="flex items-center justify-between">
+    <div class="flex-1">
+      <h3
+        class="font-semibold {{ $task->completed ? 'line-through text-gray-500' : '' }}"
+      >
+        {{ $task->title }}
+      </h3>
+
+      @if($task->description)
+      <p
+        class="text-gray-600 mt-1 {{ $task->completed ? 'line-through' : '' }}"
+      >
+        {{ $task->description }}
+      </p>
+      @endif
+    </div>
+
+    <div class="flex gap-2 ml-4">
+      <!-- Toggle completion button -->
+      <button
+        hx-patch="hx/task@toggle"
+        hx-vals='{"task": {{ $task->id }}}'
+        hx-target="#task-{{ $task->id }}"
+        hx-swap="outerHTML"
+        class="px-3 py-1 rounded text-sm {{ $task->completed ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white' }}"
+      >
+        <!-- No CSRF token needed! FlashHALT handles it automatically -->
+        {{ $task->completed ? 'Undo' : 'Complete' }}
+      </button>
+
+      <!-- Delete button -->
+      <button
+        hx-delete="hx/task@destroy"
+        hx-vals='{"task": {{ $task->id }}}'
+        hx-target="#task-{{ $task->id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Are you sure you want to delete this task?"
+        class="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+      >
+        <!-- No CSRF token needed! FlashHALT handles it automatically -->
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+```
+
+**Load the Task List in Your Main Page**
+
+```html
+<!-- In any view where you want to show tasks -->
+<div
+  hx-get="hx/task@index"
+  hx-trigger="load"
+  hx-target="this"
+  hx-swap="innerHTML"
+>
+  <div class="text-center p-8">
+    <div
+      class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"
+    ></div>
+    <p class="mt-2 text-gray-600">Loading tasks...</p>
+  </div>
+</div>
+```
+
+**That's It - No Routes Needed!**
+
+Notice what we didn't have to do. We never touched the routes file. We never manually added CSRF tokens. FlashHALT automatically resolved our URL patterns to the controller methods and handled all the security concerns transparently.
+
+The URLs `hx/@index`, `hx/task@store`, `hx/task@toggle`, and `hx/task@destroy` automatically map to the corresponding methods in `TaskController`. The CSRF protection is automatically applied to all the POST, PATCH, and DELETE requests.
+
+## Understanding FlashHALT's Two Operating Modes
+
+FlashHALT is designed to optimize your workflow in both development and production environments. Understanding these two modes will help you get the maximum benefit from the package.
+
+**Development Mode: Instant Feedback and Maximum Flexibility**
+
+In development mode (which is the default), FlashHALT uses dynamic routing. When a request comes in with the `hx/` pattern, FlashHALT's middleware intercepts it, analyzes the URL pattern, and dynamically resolves it to the appropriate controller method. This happens in real-time for every request.
+
+The beauty of development mode is that changes are instant. You can add a new method to your controller, reference it in your template with `hx/controller@newMethod`, and it works immediately - no route definitions, no cache clearing, no build steps. This instant feedback loop keeps you in a flow state and eliminates the friction that normally slows down HTMX development.
+
+Development mode also provides detailed error messages when something goes wrong. If you reference a controller that doesn't exist, or a method that's not allowed, FlashHALT gives you clear, actionable error messages that help you fix the problem quickly.
+
+**Production Mode: Maximum Performance and Security**
+
+In production mode, FlashHALT takes a completely different approach optimized for performance and security. Instead of dynamically resolving routes at runtime, FlashHALT analyzes all your Blade templates during deployment and generates traditional Laravel route definitions for every FlashHALT pattern it finds.
+
+This compilation process means that in production, your FlashHALT routes perform exactly the same as manually defined routes - there's zero runtime overhead, zero dynamic resolution, and zero performance penalty. Your application runs at full speed while still giving you the development experience benefits.
+
+The compilation process also serves as a security validation step. FlashHALT checks every route it finds against your security configuration, ensuring that only safe controller methods are exposed. If it finds any problematic patterns, it fails the compilation and alerts you to the issue.
+
+**Switching Between Modes**
+
+To compile for production:
+
+```bash
+# Analyze your templates and generate static routes
+php artisan flashhalt:compile
+
+# Switch to production mode
+echo "FLASHHALT_MODE=production" >> .env
+```
+
+To return to development:
+
+```bash
+# Clear compiled routes
+php artisan flashhalt:clear
+
+# Switch back to development mode
+echo "FLASHHALT_MODE=development" >> .env
+```
+
+The key insight is that you get the best of both worlds: the incredible developer experience of dynamic routing in development, and the performance and security of static routes in production.
+
+## Security: Designed to Be Secure by Default
+
+Security in FlashHALT isn't an afterthought - it's built into every layer of the system. Let me explain how FlashHALT protects your application without limiting your flexibility.
+
+**Controller Whitelisting: Only What You Allow**
+
+By default, FlashHALT only allows access to controllers in your main `App\Http\Controllers` namespace. This means that even if someone discovers FlashHALT is running on your site, they can't arbitrarily call methods on internal classes or framework components.
 
 ```php
-'development' => [
-    // Cache TTL for controller resolution (seconds)
-    'cache_ttl' => env('FLASHHALT_DEV_CACHE_TTL', 3600),
-
-    // Enable debug mode with detailed error reporting
-    'debug_mode' => env('FLASHHALT_DEBUG', env('APP_DEBUG', false)),
-
-    // Rate limiting (requests per minute per IP)
-    'rate_limit' => env('FLASHHALT_DEV_RATE_LIMIT', 120),
-
-    // Whitelist specific controllers (empty allows all)
-    'allowed_controllers' => [],
+// config/flashhalt.php
+'allowed_controllers' => [
+    'App\Http\Controllers\*',        // Allow all controllers in main namespace
+    'App\Http\Controllers\Api\*',    // Allow API controllers
+    'UserController',                // Allow specific controller by name
+    'Admin\UserController',          // Allow specific namespaced controller
 ],
 ```
 
-### Security Configuration
+This whitelist approach means you're secure by default, but you can easily expand access as needed. If you have controllers in other namespaces that should be accessible via FlashHALT, simply add them to the whitelist.
+
+**Method Validation: Preventing Dangerous Operations**
+
+FlashHALT validates every method call against both a whitelist of allowed methods and a blacklist of dangerous patterns. The default configuration allows standard RESTful methods while blocking potentially dangerous operations.
+
+```php
+'method_whitelist' => [
+    'index', 'show', 'create', 'store', 'edit', 'update', 'destroy'
+],
+
+'method_pattern_blacklist' => [
+    '/^_.*/',           // Block any method starting with underscore
+    '/.*[Pp]assword.*/', // Block methods containing "password"
+    '/.*[Tt]oken.*/',   // Block methods containing "token"
+    '/.*[Ss]ecret.*/',  // Block methods containing "secret"
+],
+```
+
+This dual-layer approach ensures that sensitive methods are never accidentally exposed while still giving you the flexibility to add custom methods to the whitelist as needed.
+
+**Automatic CSRF Protection: Always On, Never Forgotten**
+
+The automatic CSRF protection in FlashHALT isn't just convenient - it actually improves your application's security posture. Because CSRF protection is automatic and invisible, there's no temptation to skip it or disable it for "just this one request." Every state-changing request is protected, always.
+
+**Integration with Laravel's Authorization System**
+
+FlashHALT doesn't replace Laravel's authorization system - it enhances it. Your existing authorization policies, gates, and middleware work exactly as they would with traditional routes.
+
+```php
+class TaskController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');  // Authentication works normally
+    }
+
+    public function destroy(Task $task)
+    {
+        $this->authorize('delete', $task);  // Authorization works normally
+        $task->delete();
+        return '';
+    }
+}
+```
+
+FlashHALT operates at the routing layer, so all of Laravel's security features continue to work exactly as expected.
+
+## Configuration: Customizing FlashHALT for Your Needs
+
+While FlashHALT works great with the default configuration, understanding the available options helps you tailor it to your specific requirements.
+
+**Basic Mode Configuration**
+
+```php
+// config/flashhalt.php
+return [
+    // Controls whether FlashHALT uses dynamic or static routing
+    'mode' => env('FLASHHALT_MODE', 'development'),
+
+    // Development mode settings
+    'development' => [
+        'enabled' => env('FLASHHALT_DEV_ENABLED', true),
+        'cache_resolution' => true,  // Cache controller resolution for performance
+        'debug_mode' => env('APP_DEBUG', false),  // Detailed error messages
+    ],
+
+    // Production mode settings
+    'production' => [
+        'compiled_routes_path' => base_path('routes/flashhalt-compiled.php'),
+        'cache_compiled_routes' => true,
+        'fallback_to_dynamic' => false,  // Fail fast if compiled routes missing
+    ],
+];
+```
+
+**Security Configuration**
 
 ```php
 'security' => [
-    // Allowed controller namespaces
-    'allowed_namespaces' => [
-        'App\\Http\\Controllers\\*',
+    // Controllers that can be accessed via FlashHALT
+    'allowed_controllers' => [
+        'App\Http\Controllers\*',
+        // Add your additional namespaces here
     ],
 
-    // Blocked method names for security
-    'blocked_methods' => [
-        '__construct', '__destruct', '__call', '__callStatic',
-        'middleware', 'getMiddleware', 'callAction'
+    // Methods that are allowed to be called
+    'method_whitelist' => [
+        'index', 'show', 'create', 'store', 'edit', 'update', 'destroy',
+        // Add your custom methods here
     ],
 
-    // Maximum route pattern length
-    'max_pattern_length' => 100,
+    // Patterns that should never be allowed
+    'method_pattern_blacklist' => [
+        '/^_.*/',           // Private methods
+        '/.*[Pp]assword.*/', // Password operations
+        '/.*[Tt]oken.*/',   // Token operations
+        // Add your patterns here
+    ],
 
-    // Maximum namespace depth
-    'max_namespace_depth' => 5,
+    // Enable automatic CSRF protection
+    'csrf_protection' => true,
+
+    // Ensure destructive operations can't be called via GET
+    'enforce_http_method_semantics' => true,
 ],
 ```
 
-### Performance Configuration
+## Advanced Features: Going Beyond the Basics
+
+**Parameter Binding and Model Injection**
+
+FlashHALT works seamlessly with Laravel's powerful parameter binding system. You can use route model binding, custom resolution logic, and dependency injection exactly as you would with traditional routes.
 
 ```php
-'performance' => [
-    // Cache store for FlashHALT operations
-    'cache_store' => env('FLASHHALT_CACHE_STORE', env('CACHE_DRIVER', 'file')),
+class UserController extends Controller
+{
+    public function show(User $user)
+    {
+        // $user is automatically resolved from the request parameter
+        return view('users.profile', compact('user'));
+    }
 
-    // Enable memory caching for single request
-    'enable_memory_cache' => true,
+    public function update(Request $request, User $user, AuditService $audit)
+    {
+        // Multiple parameters and service injection work perfectly
+        $user->update($request->validated());
+        $audit->log('user.updated', $user);
 
-    // Memory cache limit in MB
-    'memory_cache_limit' => 10,
-],
+        return view('users.profile', compact('user'));
+    }
+}
 ```
 
-## Console Commands
+```html
+<!-- Pass parameters via hx-vals or form fields -->
+<button hx-get="hx/users@show" hx-vals='{"user": {{ $user->id }}}'>
+  View Profile
+</button>
 
-FlashHALT provides Artisan commands for development and deployment workflows.
+<form hx-patch="hx/users@update">
+  <input type="hidden" name="user" value="{{ $user->id }}" />
+  <input type="text" name="name" value="{{ $user->name }}" />
+  <button type="submit">Update</button>
+</form>
+```
 
-### flashhalt:compile
+**Custom Response Headers for HTMX**
 
-Compile FlashHALT routes for production deployment:
+FlashHALT doesn't interfere with HTMX's response header system. You can use all of HTMX's powerful response headers to create sophisticated interactions.
+
+```php
+class NotificationController extends Controller
+{
+    public function markAsRead(Notification $notification)
+    {
+        $notification->markAsRead();
+
+        return response()
+            ->view('notifications.notification', compact('notification'))
+            ->header('HX-Trigger', 'notificationRead')  // Trigger client-side events
+            ->header('HX-Push-Url', '/notifications');   // Update browser URL
+    }
+}
+```
+
+**Middleware Integration**
+
+FlashHALT routes respect all your existing middleware. Authentication, authorization, rate limiting, and custom middleware all work exactly as expected.
+
+```php
+class AdminController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('can:access-admin');
+        $this->middleware('throttle:60,1');  // Rate limiting works normally
+    }
+}
+```
+
+## Console Commands: Managing Your FlashHALT Installation
+
+FlashHALT provides two console commands that help you manage the compilation process and troubleshoot issues.
+
+**The Compile Command: Preparing for Production**
+
+The `flashhalt:compile` command analyzes all your Blade templates, finds FlashHALT patterns, validates them against your security configuration, and generates optimized Laravel route definitions.
 
 ```bash
 # Basic compilation
 php artisan flashhalt:compile
 
-# Available options:
---force          # Force compilation even if no changes detected
---verify         # Run verification checks after compilation
---dry-run        # Analyze without writing files
---stats          # Display comprehensive statistics
---routes-only    # Show discovered routes without compiling
--v, -vv, -vvv    # Increase verbosity for debugging
+# See detailed output about what's being compiled
+php artisan flashhalt:compile --verbose
+
+# See what would be compiled without actually generating routes
+php artisan flashhalt:compile --dry-run
+
+# Force compilation even if routes already exist
+php artisan flashhalt:compile --force
 ```
 
-### flashhalt:clear
+The compile command provides detailed feedback about what it finds:
 
-Clear FlashHALT compilation artifacts and caches:
+```
+🔍 Analyzing Blade templates in /resources/views...
+✅ Found 24 FlashHALT routes in 18 templates
+
+📝 Validating routes against security configuration...
+✅ All routes passed security validation
+
+⚡ Generating optimized route definitions...
+✅ Created routes/flashhalt-compiled.php (156 lines, 24 routes)
+
+🎯 Compilation complete! Your application is production-ready.
+   • 24 dynamic routes converted to static routes
+   • 0 security violations found
+   • 156 lines of optimized code generated
+```
+
+**The Clear Command: Cleaning Up**
+
+The `flashhalt:clear` command removes compilation artifacts and cache entries, which is useful when switching between modes or troubleshooting issues.
 
 ```bash
 # Clear all FlashHALT artifacts
 php artisan flashhalt:clear
 
-# Available options:
---compiled-only  # Only remove compiled routes file
---cache-only     # Only clear FlashHALT caches
---dry-run        # Show what would be cleared without removing
---force          # Skip confirmation prompts
+# Clear only compiled routes
+php artisan flashhalt:clear --compiled-routes
+
+# Clear only cache entries
+php artisan flashhalt:clear --cache
+
+# See what would be cleared without actually removing anything
+php artisan flashhalt:clear --dry-run
 ```
 
-## Security
+## Troubleshooting: Solving Common Issues
 
-FlashHALT implements comprehensive security measures to protect your application.
+**"Controller not whitelisted" Error**
 
-### Controller Namespace Restrictions
+This error means you're trying to access a controller that's not in your `allowed_controllers` configuration. This is a security feature - FlashHALT only allows access to explicitly permitted controllers.
 
-By default, FlashHALT only allows access to controllers in approved namespaces:
+**Solution:** Add your controller to the whitelist in `config/flashhalt.php`:
+
+```php
+'allowed_controllers' => [
+    'App\Http\Controllers\*',
+    'YourNamespace\YourController',  // Add this line
+],
+```
+
+**CSRF Token Mismatch (419 Error)**
+
+If you're getting 419 errors, it usually means the automatic CSRF injection isn't working properly.
+
+**Solution:** Ensure you've included `@flashhaltCsrf` and `@flashhaltScripts` in your layout:
+
+```html
+<head>
+  <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+  @flashhaltCsrf @flashhaltScripts
+</head>
+```
+
+**Method Not Found or Not Allowed**
+
+This error occurs when you reference a method that doesn't exist or isn't in the method whitelist.
+
+**Solution:** Check that your method exists and add it to the whitelist if needed:
+
+```php
+'method_whitelist' => [
+    'index', 'show', 'store', 'update', 'destroy',
+    'yourCustomMethod',  // Add your method here
+],
+```
+
+**Routes Not Working in Production**
+
+If FlashHALT routes stop working after deployment, you likely forgot to compile the routes.
+
+**Solution:** Compile routes as part of your deployment process:
+
+```bash
+php artisan flashhalt:compile
+```
+
+**Getting Detailed Debug Information**
+
+Enable debug mode for detailed error messages and logging:
 
 ```php
 // config/flashhalt.php
-'security' => [
-    'allowed_namespaces' => [
-        'App\\Http\\Controllers\\*',
-        'App\\Http\\Controllers\\Api\\*',
-        'App\\Http\\Controllers\\Admin\\*',
-    ],
-],
-```
-
-### Method Security Validation
-
-FlashHALT automatically blocks access to dangerous methods:
-
-```php
-// Blocked by default
-'blocked_methods' => [
-    '__construct', '__destruct', '__call', '__callStatic',
-    'middleware', 'getMiddleware', 'callAction',
-],
-```
-
-**Additional Security Checks:**
-
-- Only public methods are accessible
-- Methods must exist and be callable
-- Laravel controller methods are protected
-- Magic methods are blocked
-- Static methods are blocked
-- Methods with security annotations (`@internal`, `@private`) are blocked
-
-### Laravel Integration
-
-FlashHALT respects all Laravel security features:
-
-```php
-class UserController extends Controller
-{
-    public function __construct()
-    {
-        // Constructor middleware applies to all FlashHALT routes
-        $this->middleware('auth');
-        $this->middleware('verified');
-    }
-
-    public function index()
-    {
-        // Method-level authorization
-        $this->authorize('viewAny', User::class);
-
-        return view('users.index', ['users' => User::all()]);
-    }
-
-    public function update(Request $request, User $user)
-    {
-        // Per-resource authorization
-        $this->authorize('update', $user);
-
-        $user->update($request->validated());
-        return view('users.updated', compact('user'));
-    }
-}
-```
-
-## Performance
-
-FlashHALT is designed for exceptional performance in both development and production environments.
-
-### Development Performance
-
-**Intelligent Caching:**
-
-```php
 'development' => [
-    'cache_ttl' => 3600, // Cache controller resolution for 1 hour
-    'enable_memory_cache' => true, // Single-request memory cache
-    'memory_cache_limit' => 10, // 10MB memory limit
+    'debug_mode' => true,
 ],
 ```
 
-**Resolution Optimization:**
+With debug mode enabled, FlashHALT logs detailed information about route resolution attempts, which you can find in your Laravel logs.
 
-- Controller class existence is cached after first check
-- Method reflection results are cached across requests
-- Security validation results are memoized
-- Namespace mapping is optimized for common patterns
+## Testing Your FlashHALT Applications
 
-### Production Performance
-
-**Route Compilation Benefits:**
-
-- Eliminates dynamic controller resolution entirely
-- Generates optimized Laravel route definitions
-- Leverages Laravel's built-in route caching
-- Reduces memory usage and CPU overhead
-
-## Testing
-
-FlashHALT integrates seamlessly with Laravel's testing ecosystem.
-
-### Feature Testing
-
-Test FlashHALT routes using Laravel's testing tools:
+FlashHALT routes can be tested exactly like traditional Laravel routes. Here are some patterns that work well:
 
 ```php
 <?php
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
+use App\Models\Task;
 
-class FlashHaltTest extends TestCase
+class TaskControllerTest extends TestCase
 {
-    use RefreshDatabase;
-
-    public function test_user_listing_via_flashhalt()
+    /** @test */
+    public function it_can_load_task_index_via_flashhalt()
     {
-        User::factory()->count(3)->create();
+        $response = $this->get('hx/task@index');
 
-        $response = $this->get('/hx/users@index', [
-            'HX-Request' => 'true'
-        ]);
-
-        $response->assertStatus(200)
-                 ->assertViewIs('users.index')
-                 ->assertViewHas('users');
+        $response->assertOk();
+        $response->assertViewIs('tasks.index');
     }
 
-    public function test_user_creation_via_flashhalt()
+    /** @test */
+    public function it_can_create_tasks_with_csrf_protection()
     {
-        $userData = [
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-        ];
-
-        $response = $this->post('/hx/users@store', $userData, [
-            'HX-Request' => 'true'
+        $response = $this->post('hx/task@store', [
+            'title' => 'Test Task',
+            'description' => 'Test Description',
+            '_token' => csrf_token(),  // Include CSRF token in tests
         ]);
 
-        $response->assertStatus(200);
+        $response->assertOk();
+        $this->assertDatabaseHas('tasks', ['title' => 'Test Task']);
+    }
 
-        $this->assertDatabaseHas('users', [
-            'name' => 'John Doe',
-            'email' => 'john@example.com'
+    /** @test */
+    public function it_respects_authorization_policies()
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+        $otherUser = User::factory()->create();
+
+        $this->actingAs($otherUser);
+
+        $response = $this->delete('hx/task@destroy', [
+            'task' => $task->id,
+            '_token' => csrf_token(),
         ]);
+
+        $response->assertForbidden();  // Should be blocked by authorization
     }
 }
 ```
 
-### Testing HTMX Responses
+## Best Practices: Getting the Most from FlashHALT
 
-Test HTMX-specific response features:
+**Organize Controllers by Feature, Not by HTTP Method**
+
+Since FlashHALT eliminates route files, organize your controllers around business logic rather than HTTP semantics:
 
 ```php
-public function test_htmx_response_includes_correct_headers()
+// Good: Feature-focused controller
+class TaskController extends Controller
 {
-    $response = $this->post('/hx/users@store', [
-        'name' => 'Test User',
-        'email' => 'test@example.com'
-    ], [
-        'HX-Request' => 'true'
-    ]);
+    public function index() { /* list tasks */ }
+    public function store() { /* create task */ }
+    public function toggle() { /* toggle completion */ }
+    public function archive() { /* archive task */ }
+    public function assignTo() { /* assign to user */ }
+}
 
-    $response->assertStatus(200)
-             ->assertHeader('X-FlashHALT-Processed', 'true');
+// Also good: Focused single-purpose controller
+class TaskArchiveController extends Controller
+{
+    public function archive() { /* archive logic */ }
+    public function restore() { /* restore logic */ }
+    public function purge() { /* permanent deletion */ }
 }
 ```
 
-## Troubleshooting
+**Use Descriptive Method Names**
 
-### Common Issues and Solutions
+Since your method names appear in URLs, make them descriptive and intention-revealing:
 
-#### 1. Routes Not Working
-
-**Problem:** FlashHALT routes return 404 errors
-
-**Solutions:**
-
-```bash
-# Check if FlashHALT is properly installed
-composer show dancycodes/flashhalt
-
-# Clear all caches
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-
-# Verify FlashHALT routes are registered
-php artisan route:list | grep hx/
+```html
+<!-- Clear and intention-revealing -->
+<button hx-post="hx/task@markComplete">Mark Complete</button>
+<button hx-patch="hx/user@updatePassword">Change Password</button>
+<button hx-delete="hx/project@archiveProject">Archive Project</button>
 ```
 
-#### 2. Controller Not Found
+**Return Partial Views for HTMX**
 
-**Problem:** "Controller class does not exist" errors
+Structure your views to support partial updates:
 
-**Solutions:**
+```php
+public function store(Request $request)
+{
+    $task = Task::create($request->validated());
 
-```bash
-# Regenerate autoloader
-composer dump-autoload
+    // Return just the new task HTML, not the full page
+    return view('tasks.task-item', compact('task'));
+}
 
-# Check namespace configuration
-# config/flashhalt.php
-'security' => [
-    'allowed_namespaces' => [
-        'App\\Http\\Controllers\\*',
-        'App\\Http\\Controllers\\Admin\\*', // Add your namespaces
-    ],
+public function index()
+{
+    $tasks = Task::all();
+
+    if (request()->header('HX-Request')) {
+        // Return partial for HTMX requests
+        return view('tasks.task-list', compact('tasks'));
+    }
+
+    // Return full page for direct navigation
+    return view('tasks.index', compact('tasks'));
+}
+```
+
+**Leverage HTMX Response Headers**
+
+Use HTMX's response headers to create sophisticated interactions:
+
+```php
+public function store(Request $request)
+{
+    $task = Task::create($request->validated());
+
+    return response()
+        ->view('tasks.task-item', compact('task'))
+        ->header('HX-Trigger', 'taskCreated')  // Trigger client-side events
+        ->header('HX-Push-Url', '/tasks')      // Update browser URL
+        ->header('HX-Redirect', '/tasks');     // Redirect after action
+}
+```
+
+## Performance: Making FlashHALT Fast
+
+**Development Mode Optimizations**
+
+FlashHALT caches controller resolution results to minimize filesystem operations:
+
+```php
+// config/flashhalt.php
+'development' => [
+    'cache_resolution' => true,  // Cache controller lookups
 ],
 ```
 
-#### 3. CSRF Token Issues
+**Production Mode: Zero Overhead**
 
-**Problem:** 419 CSRF token mismatch errors
+In production mode, FlashHALT-generated routes perform identically to hand-written routes. There's no runtime overhead, no dynamic resolution, and no performance penalty.
 
-**Solutions:**
+**Compilation Best Practices**
 
-```html
-<!-- Ensure @flashhaltScripts is included -->
-@flashhaltScripts
-
-<!-- Or manually configure CSRF handling -->
-<meta name="csrf-token" content="{{ csrf_token() }}" />
-<script>
-  document.body.addEventListener("htmx:configRequest", function (evt) {
-    evt.detail.headers["X-CSRF-TOKEN"] = document.querySelector(
-      'meta[name="csrf-token"]'
-    ).content;
-  });
-</script>
-```
-
-### Getting Help
-
-- **GitHub Issues:** [https://github.com/dancycodes/flashhalt/issues](https://github.com/dancycodes/flashhalt/issues)
-- **Laravel Community:** [Laravel.io](https://laravel.io)
-- **HTMX Community:** [HTMX Discord](https://discord.gg/htmx)
-
-## Development Status
-
-FlashHALT is actively under development.
-
-## Contributing
-
-We welcome contributions to FlashHALT! Whether you're fixing bugs, adding features, or improving documentation, your help makes FlashHALT better for everyone.
-
-### Development Setup
+Include compilation in your deployment pipeline:
 
 ```bash
-# Clone the repository
-git clone https://github.com/dancycodes/flashhalt.git
-cd flashhalt
-
-# Install dependencies
-composer install
-
-# Run tests
-composer test
+# In your deployment script
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan route:cache
+php artisan flashhalt:compile  # Compile FlashHALT routes
+php artisan view:cache
 ```
 
-### Pull Request Process
+## Contributing and Getting Help
 
-1. **Fork the repository**
-2. **Create a feature branch:** `git checkout -b feature/amazing-feature`
-3. **Write tests:** Ensure new code is tested
-4. **Update documentation:** Document new features and changes
-5. **Commit changes:** Use conventional commit messages
-6. **Push to branch:** `git push origin feature/amazing-feature`
-7. **Open Pull Request:** Include detailed description and motivation
+FlashHALT is actively maintained and we welcome contributions. Whether you've found a bug, have a feature request, or want to contribute code, we'd love to hear from you.
+
+**Reporting Issues**
+
+When reporting issues, please include:
+
+- Laravel version
+- FlashHALT version
+- Configuration settings (without sensitive data)
+- Steps to reproduce the issue
+- Expected vs actual behavior
+
+**Contributing Code**
+
+1. Fork the repository
+2. Create a feature branch
+3. Write tests for your changes
+4. Ensure all tests pass
+5. Submit a pull request
+
+**Getting Help**
+
+- Check the troubleshooting section above
+- Review the configuration options
+- Enable debug mode for detailed error messages
+- Check the GitHub issues for similar problems
 
 ## License
 
@@ -825,6 +1031,8 @@ FlashHALT is open-sourced software licensed under the [MIT license](LICENSE.md).
 
 ---
 
-**FlashHALT** - Revolutionizing Laravel HTMX development through convention over configuration.
+**Stop writing routes. Start building features.**
+
+FlashHALT eliminates the friction that slows down HTMX development in Laravel. With automatic CSRF protection, intuitive URL patterns, and production-ready compilation, you can focus on building great user experiences instead of wrestling with routing boilerplate.
 
 Built with ❤️ by [DancyCodes](https://github.com/dancycodes) and the open-source community.
