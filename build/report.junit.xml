@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" tests="27" assertions="39" errors="19" failures="1" skipped="0" time="1.863711">
+    <testcase name="exceptions_handle_previous_exception_chaining" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="594" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="4" time="0.874812"/>
+    <testcase name="flashhalt_exception_includes_stack_trace_when_requested" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="95" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.031817"/>
+    <testcase name="controller_resolution_exception_stores_resolution_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="178" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.057675">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_stores_resolution_context&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:180</error>
+    </testcase>
+    <testcase name="flashhalt_exception_generates_comprehensive_array_representation" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="70" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="11" time="0.028059"/>
+    <testcase name="route_compiler_exception_generates_comprehensive_compilation_reports" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="551" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030945">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::route_compiler_exception_generates_comprehensive_compilation_reports&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\RouteCompilerException::$compilationStage must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:515
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:401
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:129
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:553</error>
+    </testcase>
+    <testcase name="controller_resolution_exception_provides_appropriate_http_status_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="217" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.029629">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_provides_appropriate_http_status_codes&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:219</error>
+    </testcase>
+    <testcase name="controller_resolution_exception_supports_adding_attempted_classes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="195" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.029901">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_supports_adding_attempted_classes&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:197</error>
+    </testcase>
+    <testcase name="security_validation_exception_creates_security_reports" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="418" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030957">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_creates_security_reports&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:420</error>
+    </testcase>
+    <testcase name="route_compiler_exception_determines_reporting_based_on_environment" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="526" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.028441">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::route_compiler_exception_determines_reporting_based_on_environment&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\RouteCompilerException::$compilationStage must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:515
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:401
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:129
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:528</error>
+    </testcase>
+    <testcase name="security_validation_exception_validates_severity_levels" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="326" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030100">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_validates_severity_levels&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:328</error>
+    </testcase>
+    <testcase name="flashhalt_exception_creates_development_friendly_string" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="121" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030985">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::flashhalt_exception_creates_development_friendly_string&#13;
+Error: Call to undefined method DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::assertStringContains()
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:131</error>
+    </testcase>
+    <testcase name="route_compiler_exception_provides_compilation_specific_http_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="503" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030740">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::route_compiler_exception_provides_compilation_specific_http_codes&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\RouteCompilerException::$compilationStage must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:515
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:401
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:129
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:505</error>
+    </testcase>
+    <testcase name="security_validation_exception_provides_security_specific_http_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="372" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.028426">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_provides_security_specific_http_codes&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:374</error>
+    </testcase>
+    <testcase name="flashhalt_exception_creates_production_safe_string" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="139" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.038073">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::flashhalt_exception_creates_production_safe_string&#13;
+Error: Call to undefined method DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::assertStringNotContains()
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:148</error>
+    </testcase>
+    <testcase name="controller_resolution_exception_determines_reporting_appropriately" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="240" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.029998">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_determines_reporting_appropriately&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:245</error>
+    </testcase>
+    <testcase name="security_validation_exception_determines_reporting_based_on_severity" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="347" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.031469">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_determines_reporting_based_on_severity&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:349</error>
+    </testcase>
+    <testcase name="flashhalt_exception_generates_valid_json_representation" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="108" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.033273"/>
+    <testcase name="route_compiler_exception_supports_adding_compilation_details" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="477" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.030872">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::route_compiler_exception_supports_adding_compilation_details&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\RouteCompilerException::$compilationStage must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:515
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:401
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:129
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:479</error>
+    </testcase>
+    <testcase name="route_compiler_exception_stores_compilation_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="447" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.047336">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::route_compiler_exception_stores_compilation_context&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\RouteCompilerException::$compilationStage must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:515
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:401
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\RouteCompilerException.php:129
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:449</error>
+    </testcase>
+    <testcase name="controller_resolution_exception_analyzes_route_patterns" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="285" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.062118">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_analyzes_route_patterns&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:287</error>
+    </testcase>
+    <testcase name="security_validation_exception_sanitizes_sensitive_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="395" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.055437">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_sanitizes_sensitive_context&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:397</error>
+    </testcase>
+    <testcase name="security_validation_exception_stores_security_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="309" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.058555">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::security_validation_exception_stores_security_context&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\SecurityValidationException::$severity must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:261
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:205
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\SecurityValidationException.php:74
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:311</error>
+    </testcase>
+    <testcase name="controller_resolution_exception_generates_comprehensive_resolution_report" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="262" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="0" time="0.067258">
+      <error type="Error">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::controller_resolution_exception_generates_comprehensive_resolution_report&#13;
+Error: Typed property DancyCodes\FlashHalt\Exceptions\ControllerResolutionException::$resolutionStep must not be accessed before initialization
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:416
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:300
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:336
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\FlashHaltException.php:93
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Exceptions\ControllerResolutionException.php:91
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:264</error>
+    </testcase>
+    <testcase name="flashhalt_exception_creates_appropriate_http_responses" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="153" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="10" time="0.045366"/>
+    <testcase name="flashhalt_exception_supports_method_chaining_for_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="47" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.037040">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::flashhalt_exception_supports_method_chaining_for_context&#13;
+Failed asserting that actual size 5 matches expected size 3.
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:61</failure>
+    </testcase>
+    <testcase name="exceptions_provide_consistent_timestamp_formatting" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="614" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="2" time="0.030926"/>
+    <testcase name="flashhalt_exception_stores_structured_error_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="33" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.033501"/>
+  </testsuite>
+</testsuites>

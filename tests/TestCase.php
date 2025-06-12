@@ -14,7 +14,7 @@ use Orchestra\Testbench\TestCase as Orchestra;
  * provider registration, configuration setup, and provides helper methods that
  * make testing FlashHALT functionality easier and more consistent.
  */
-abstract class TestCase extends Orchestra
+class TestCase extends Orchestra
 {
     use RefreshDatabase;
 
