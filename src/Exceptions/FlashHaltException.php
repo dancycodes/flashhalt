@@ -221,7 +221,7 @@ class FlashHaltException extends Exception
         ];
 
         if ($includeTrace) {
-            $report['stack_trace'] = $this->getTraceAsString();  // Changed from 'stack_trace' to 'trace'
+            $report['trace'] = $this->getTrace();
         }
 
         // Include previous exception information if available

@@ -1,19 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" tests="9" assertions="32" errors="0" failures="1" skipped="0" time="0.662487">
-    <testcase name="flashhalt_exception_creates_development_friendly_string" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="115" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="4" time="0.388843"/>
-    <testcase name="flashhalt_exception_stores_structured_error_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="33" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="2" time="0.024887"/>
-    <testcase name="controller_resolution_exception_generates_comprehensive_resolution_report" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="277" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="4" time="0.037181"/>
-    <testcase name="route_compiler_exception_provides_compilation_specific_http_codes" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="491" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.031260"/>
-    <testcase name="flashhalt_exception_creates_appropriate_http_responses" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="150" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="6" time="0.034415"/>
-    <testcase name="security_validation_exception_creates_security_reports" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="428" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="4" time="0.038169"/>
-    <testcase name="controller_resolution_exception_stores_resolution_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="201" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="3" time="0.031835"/>
-    <testcase name="route_compiler_exception_determines_reporting_based_on_environment" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="514" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="4" time="0.032222"/>
-    <testcase name="exceptions_provide_consistent_timestamp_formatting" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php" line="183" class="DancyCodes\FlashHalt\Tests\Unit\ExceptionTest" classname="DancyCodes.FlashHalt.Tests.Unit.ExceptionTest" assertions="2" time="0.043674">
-      <failure type="PHPUnit\Framework\ExpectationFailedException">DancyCodes\FlashHalt\Tests\Unit\ExceptionTest::exceptions_provide_consistent_timestamp_formatting&#13;
-Failed asserting that a boolean is an instance of class DateTime.
+  <testsuite name="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\phpunit.xml" tests="13" assertions="24" errors="6" failures="1" skipped="0" time="2.901773">
+    <testsuite name="Integration" tests="13" assertions="24" errors="6" failures="1" skipped="0" time="2.901773">
+      <testsuite name="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" tests="13" assertions="24" errors="6" failures="1" skipped="0" time="2.901773">
+        <testcase name="memory_cache_coordinates_with_persistent_cache" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="363" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="2" time="0.369853"/>
+        <testcase name="nested_namespace_resolution_works_with_compilation" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="483" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="3" time="0.063997">
+          <error type="ErrorException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::nested_namespace_resolution_works_with_compilation&#13;
+ErrorException: file_get_contents(C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\storage\app/flashhalt-compiled.php): Failed to open stream: No such file or directory
 &#13;
-C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Unit\ExceptionTest.php:195</failure>
-    </testcase>
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php:256
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:514</error>
+          <system-out>[FlashHALT Compiler] Compilation initialized successfully
+[FlashHALT Compiler] Discovered 3 templates in C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\resources\views
+[FlashHALT Compiler] Discovered 3 template files to analyze
+[FlashHALT Compiler] Completed template scanning. Found 2 route patterns.
+[FlashHALT Compiler] Found 2 potential FlashHALT routes
+[FlashHALT Compiler] Route validation completed. 2 routes ready for compilation.
+[FlashHALT Compiler] Validated 2 routes for compilation
+[FlashHALT Compiler] Generated 2 route definitions
+[FlashHALT Compiler] Generated compiled route definitions
+[FlashHALT Compiler] Compiled routes written to C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\routes/flashhalt-compiled.php
+[FlashHALT Compiler] Written compiled routes to file
+[FlashHALT Compiler] Compilation finalized successfully
+</system-out>
+        </testcase>
+        <testcase name="error_handling_coordinates_across_all_components" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="229" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="0" time="0.024966">
+          <error type="LogicException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::error_handling_coordinates_across_all_components&#13;
+LogicException: Route is not bound.
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Routing\Route.php:477
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Routing\Route.php:446
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:239</error>
+        </testcase>
+        <testcase name="compilation_integrates_with_controller_resolution_and_validation" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="168" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="0" time="0.030092">
+          <error type="ErrorException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::compilation_integrates_with_controller_resolution_and_validation&#13;
+ErrorException: file_put_contents(C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\resources\views/integration/users.blade.php): Failed to open stream: No such file or directory
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Foundation\Bootstrap\HandleExceptions.php:256
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\TestCase.php:194
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:171</error>
+        </testcase>
+        <testcase name="compilation_errors_provide_comprehensive_context" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="255" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="0" time="0.036219">
+          <error type="Error">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::compilation_errors_provide_comprehensive_context&#13;
+Error: Call to undefined method DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::assertStringContains()
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:269</error>
+          <system-out>[FlashHALT Compiler] Compilation initialized successfully
+[FlashHALT Compiler] Discovered 4 templates in C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\resources\views
+[FlashHALT Compiler] Discovered 4 template files to analyze
+[FlashHALT Compiler] Completed template scanning. Found 4 route patterns.
+[FlashHALT Compiler] Found 4 potential FlashHALT routes
+</system-out>
+        </testcase>
+        <testcase name="middleware_coordinates_with_all_services_properly" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="139" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="0" time="0.025564">
+          <error type="LogicException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::middleware_coordinates_with_all_services_properly&#13;
+LogicException: Route is not bound.
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Routing\Route.php:477
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\laravel\framework\src\Illuminate\Routing\Route.php:446
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:150</error>
+        </testcase>
+        <testcase name="services_coordinate_caching_correctly" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="83" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="4" time="0.030898"/>
+        <testcase name="security_validation_integrates_with_controller_resolution" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="109" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="2" time="0.032933"/>
+        <testcase name="caching_improves_performance_across_multiple_requests" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="339" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="2" time="0.029351"/>
+        <testcase name="complete_request_cycle_works_with_all_components" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="36" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="9" time="0.151465"/>
+        <testcase name="route_compilation_maintains_all_controller_features" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="429" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="0" time="0.029660">
+          <error type="DancyCodes\FlashHalt\Exceptions\RouteCompilerException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::route_compilation_maintains_all_controller_features&#13;
+DancyCodes\FlashHalt\Exceptions\RouteCompilerException: Route compilation failed: Route validation failed for pattern 'nonexistent@method': Could not resolve controller for path "nonexistent". Tried these class names: App\Http\Controllers\NonexistentController, App\Http\Controllers\Nonexistent, App\Controllers\NonexistentController, App\NonexistentController, App\Http\Controllers\nonexistent, App\Http\Controllers\nonexistentController, App\Controllers\nonexistentController, App\nonexistentController
+&#13;
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\src\Services\RouteCompiler.php:181
+C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php:466</error>
+          <system-out>[FlashHALT Compiler] Compilation initialized successfully
+[FlashHALT Compiler] Discovered 5 templates in C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\vendor\orchestra\testbench-core\laravel\resources\views
+[FlashHALT Compiler] Discovered 5 template files to analyze
+[FlashHALT Compiler] Completed template scanning. Found 6 route patterns.
+[FlashHALT Compiler] Found 6 potential FlashHALT routes
+</system-out>
+        </testcase>
+        <testcase name="cache_configuration_affects_all_caching_components" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="312" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="1" time="2.040744"/>
+        <testcase name="configuration_changes_affect_all_components_consistently" file="C:\Users\pc\Herd\todohtmx\packages\dancycodes\flashhalt\tests\Integration\FlashHaltIntegrationTest.php" line="276" class="DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest" classname="DancyCodes.FlashHalt.Tests.Integration.FlashHaltIntegrationTest" assertions="1" time="0.036029">
+          <failure type="PHPUnit\Framework\ExpectationFailedException">DancyCodes\FlashHalt\Tests\Integration\FlashHaltIntegrationTest::configuration_changes_affect_all_components_consistently&#13;
+Failed asserting that exception of type "Exception" is thrown.</failure>
+        </testcase>
+      </testsuite>
+    </testsuite>
   </testsuite>
 </testsuites>
