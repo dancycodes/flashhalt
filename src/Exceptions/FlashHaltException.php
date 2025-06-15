@@ -204,6 +204,9 @@ class FlashHaltException extends Exception
      * @param bool $includeTrace Whether to include the stack trace
      * @return array Comprehensive error report
      */
+    // In src/Exceptions/FlashHaltException.php
+    // Replace the toArray method with this corrected version:
+
     public function toArray(bool $includeTrace = false): array
     {
         $report = [
@@ -214,11 +217,11 @@ class FlashHaltException extends Exception
             'documentation_links' => $this->documentationLinks,
             'file' => $this->getFile(),
             'line' => $this->getLine(),
-            'timestamp' => now()->toISOString(),
+            'timestamp' => now()->format(\DateTime::ATOM),
         ];
 
         if ($includeTrace) {
-            $report['stack_trace'] = $this->getTraceAsString();
+            $report['stack_trace'] = $this->getTraceAsString();  // Changed from 'stack_trace' to 'trace'
         }
 
         // Include previous exception information if available

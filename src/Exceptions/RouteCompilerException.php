@@ -44,7 +44,7 @@ class RouteCompilerException extends FlashHaltException
      * - code_generation: Creating optimized route definitions
      * - file_writing: Writing compiled routes to the filesystem
      */
-    protected string $compilationStage;
+    protected string $compilationStage = 'unknown';
 
     /**
      * The route pattern that was being processed when the error occurred.
@@ -52,104 +52,88 @@ class RouteCompilerException extends FlashHaltException
      * crucial context about which route caused the problem, enabling
      * developers to locate and fix the problematic template code.
      */
-    protected string $routePattern;
+    protected string $routePattern = '';
 
     /**
      * Array of template files that were being processed during the compilation.
-     * This information helps developers understand the scope of the compilation
-     * that was attempted and can guide debugging efforts when errors occur
-     * across multiple templates.
+     * This provides context about which templates were involved in the
+     * compilation process and where problems might be located.
      */
     protected array $templateFiles = [];
 
     /**
-     * Array of routes that were successfully discovered during compilation.
-     * Even when compilation fails, this information is valuable because it
-     * shows developers which routes were found and processed successfully,
-     * helping them understand what worked and what didn't.
+     * Array of routes that were discovered during the compilation process.
+     * This shows the progress of route discovery and can help identify
+     * which routes were successfully discovered before the failure occurred.
      */
     protected array $discoveredRoutes = [];
 
     /**
-     * Array of routes that failed validation during compilation.
-     * This provides detailed information about which specific routes
-     * encountered problems and what those problems were, enabling
-     * targeted fixes rather than general debugging.
+     * Array of routes that failed validation during the compilation process.
+     * This provides specific information about which routes have problems
+     * and what types of validation failures occurred.
      */
     protected array $failedRoutes = [];
 
     /**
-     * Comprehensive compilation statistics and progress information.
-     * These metrics help developers understand how far the compilation
-     * process progressed before failing and what was accomplished
-     * before the error occurred.
+     * Compilation statistics and progress information.
+     * This includes metrics about the compilation process such as number
+     * of files processed, routes discovered, validation success rates, etc.
      */
-    protected array $compilationProgress = [];
+    protected array $compilationStats = [];
 
     /**
-     * Array of detailed error information for complex failure scenarios.
-     * When compilation involves multiple types of errors or failures
-     * across multiple files, this array provides comprehensive details
-     * about each individual problem encountered.
+     * Additional compilation context that might help with debugging.
+     * This could include configuration values, filesystem information,
+     * or other details that affect the compilation process.
      */
-    protected array $detailedErrors = [];
+    protected array $compilationContext = [];
 
     /**
-     * Configuration settings that were active during compilation.
-     * Understanding the configuration context is often crucial for
-     * debugging compilation issues, especially when errors relate to
-     * validation levels, template directories, or output paths.
-     */
-    protected array $compilationConfig = [];
-
-    /**
-     * Create a new route compilation exception with comprehensive context.
+     * Create a new route compilation exception with comprehensive debugging information.
      * 
-     * This constructor demonstrates how to design exception creation for
-     * complex processes that involve multiple types of context information.
-     * The extensive parameter list reflects the complexity of compilation
-     * processes while providing sensible defaults for simpler error scenarios.
+     * This constructor demonstrates how to design exception creation for complex,
+     * multi-stage processes that can fail at various points. The rich context
+     * provided helps developers understand not just what failed, but where in
+     * the process it failed and what context led to the failure.
      *
      * @param string $message Human-readable error description
      * @param string $errorCode Structured error code for programmatic handling
+     * @param string $compilationStage The compilation stage where failure occurred
      * @param string $routePattern The route pattern being processed (if applicable)
-     * @param string $compilationStage The stage where compilation failed
-     * @param array $templateFiles Array of template files being processed
-     * @param array $context Additional context information for debugging
+     * @param array $context Additional context information
      */
     public function __construct(
         string $message,
         string $errorCode = 'COMPILATION_FAILED',
-        string $routePattern = '',
         string $compilationStage = 'unknown',
-        array $templateFiles = [],
+        string $routePattern = '',
         array $context = []
     ) {
-        // Call the parent constructor to establish basic exception functionality
-        parent::__construct($message, $errorCode, $context);
-
-        // Store compilation-specific information for detailed error reporting
-        $this->routePattern = $routePattern;
+        // Store compilation-specific information BEFORE calling parent constructor
+        // This is crucial because the parent constructor might call methods that access these properties
         $this->compilationStage = $compilationStage;
-        $this->templateFiles = $templateFiles;
+        $this->routePattern = $routePattern;
 
-        // Extract detailed compilation information from context if provided
+        // Extract compilation context from the provided context array
+        $this->templateFiles = $context['template_files'] ?? [];
         $this->discoveredRoutes = $context['discovered_routes'] ?? [];
         $this->failedRoutes = $context['failed_routes'] ?? [];
-        $this->compilationProgress = $context['compilation_progress'] ?? [];
-        $this->detailedErrors = $context['detailed_errors'] ?? [];
-        $this->compilationConfig = $context['compilation_config'] ?? [];
+        $this->compilationStats = $context['compilation_stats'] ?? [];
+        $this->compilationContext = $context['compilation_context'] ?? [];
+
+        // Call the parent constructor to set up basic exception functionality
+        parent::__construct($message, $errorCode, $context);
     }
 
     /**
-     * Get the compilation stage where the failure occurred.
+     * Get the compilation stage where the error occurred.
      * 
-     * Understanding which stage failed helps developers focus their
-     * debugging efforts on the right aspect of the compilation process,
-     * whether that's template organization, route patterns, controller
-     * validation, or code generation issues.
+     * Understanding which stage failed helps developers focus their debugging
+     * efforts on the right area and understand which aspect of their project
+     * organization might need adjustment.
      *
-     * @return string The compilation stage identifier
+     * @return string The compilation stage where failure occurred
      */
     public function getCompilationStage(): string
     {
@@ -160,8 +144,7 @@ class RouteCompilerException extends FlashHaltException
      * Get the route pattern that was being processed when the error occurred.
      * 
      * For errors that occur during route-specific processing, this provides
-     * the exact route pattern that caused the problem, enabling developers
-     * to locate the problematic code in their templates quickly.
+     * crucial context about which specific route pattern caused the problem.
      *
      * @return string The problematic route pattern
      */
@@ -171,11 +154,10 @@ class RouteCompilerException extends FlashHaltException
     }
 
     /**
-     * Get the template files that were being processed during compilation.
+     * Get the array of template files that were involved in the compilation.
      * 
-     * This information helps developers understand the scope of the
-     * compilation attempt and can guide debugging when errors occur
-     * across multiple templates or when template discovery itself fails.
+     * This information helps developers understand which templates were
+     * being processed and can guide them to the source of compilation problems.
      *
      * @return array Array of template file paths
      */
@@ -185,14 +167,30 @@ class RouteCompilerException extends FlashHaltException
     }
 
     /**
-     * Get the routes that were successfully discovered during compilation.
+     * Add a template file to the list of files being processed.
      * 
-     * Even when compilation fails, knowing which routes were discovered
-     * successfully helps developers understand what parts of their
-     * application are working correctly and focus debugging efforts
-     * on the problematic areas.
+     * This method allows the compilation process to build up a comprehensive
+     * list of involved files as compilation progresses, providing rich
+     * debugging information when compilation ultimately fails.
      *
-     * @return array Array of successfully discovered route data
+     * @param string $filePath The template file path
+     * @return self Returns self for method chaining
+     */
+    public function addTemplateFile(string $filePath): self
+    {
+        if (!in_array($filePath, $this->templateFiles)) {
+            $this->templateFiles[] = $filePath;
+        }
+        return $this;
+    }
+
+    /**
+     * Get the array of routes that were discovered during compilation.
+     * 
+     * This shows the progress of route discovery and can help identify
+     * patterns in discovered routes or understand compilation scope.
+     *
+     * @return array Array of discovered route patterns
      */
     public function getDiscoveredRoutes(): array
     {
@@ -200,13 +198,32 @@ class RouteCompilerException extends FlashHaltException
     }
 
     /**
-     * Get the routes that failed validation during compilation.
+     * Add a discovered route to the compilation context.
      * 
-     * This provides detailed information about specific validation
-     * failures, enabling developers to understand exactly which
-     * routes need attention and what problems were detected.
+     * This method allows tracking of all routes discovered during the
+     * compilation process, providing comprehensive debugging information.
      *
-     * @return array Array of failed route data with error details
+     * @param string $routePattern The route pattern that was discovered
+     * @param array $routeContext Additional context about the route
+     * @return self Returns self for method chaining
+     */
+    public function addDiscoveredRoute(string $routePattern, array $routeContext = []): self
+    {
+        $this->discoveredRoutes[] = [
+            'pattern' => $routePattern,
+            'context' => $routeContext,
+            'discovered_at' => microtime(true),
+        ];
+        return $this;
+    }
+
+    /**
+     * Get the array of routes that failed validation during compilation.
+     * 
+     * Failed routes provide specific information about which routes have
+     * problems and what types of validation failures occurred.
+     *
+     * @return array Array of failed route information
      */
     public function getFailedRoutes(): array
     {
@@ -214,198 +231,238 @@ class RouteCompilerException extends FlashHaltException
     }
 
     /**
-     * Get comprehensive compilation progress and statistics.
+     * Add a failed route to the compilation context.
      * 
-     * Progress information helps developers understand how far
-     * the compilation process advanced before failing and what
-     * was accomplished successfully before the error occurred.
-     *
-     * @return array Compilation progress and statistics
-     */
-    public function getCompilationProgress(): array
-    {
-        return $this->compilationProgress;
-    }
-
-    /**
-     * Get detailed error information for complex failure scenarios.
-     * 
-     * When compilation involves multiple errors or complex failure
-     * patterns, this method provides comprehensive details about
-     * each individual problem, enabling systematic debugging.
-     *
-     * @return array Array of detailed error information
-     */
-    public function getDetailedErrors(): array
-    {
-        return $this->detailedErrors;
-    }
-
-    /**
-     * Add information about a failed route to the exception context.
-     * 
-     * This method allows the compilation process to build up comprehensive
-     * information about multiple route failures, creating a complete picture
-     * of what went wrong during compilation for more effective debugging.
+     * This method allows tracking of all routes that failed validation
+     * during compilation, providing detailed error information for debugging.
      *
      * @param string $routePattern The route pattern that failed
-     * @param string $errorMessage Description of the validation failure
-     * @param array $routeContext Additional context about the failed route
+     * @param string $errorMessage The specific error message
+     * @param array $errorContext Additional error context
      * @return self Returns self for method chaining
      */
-    public function addFailedRoute(string $routePattern, string $errorMessage, array $routeContext = []): self
+    public function addFailedRoute(string $routePattern, string $errorMessage, array $errorContext = []): self
     {
         $this->failedRoutes[] = [
             'pattern' => $routePattern,
             'error' => $errorMessage,
-            'context' => $routeContext,
-            'timestamp' => now()->toISOString(),
-        ];
-        
-        return $this;
-    }
-
-    /**
-     * Add detailed error information to the exception context.
-     * 
-     * This method enables the compilation process to collect comprehensive
-     * information about multiple types of errors, creating detailed reports
-     * that help developers understand complex failure scenarios.
-     *
-     * @param string $errorType The category or type of error encountered
-     * @param string $errorMessage Detailed description of the error
-     * @param array $errorContext Additional context information for debugging
-     * @return self Returns self for method chaining
-     */
-    public function addDetailedError(string $errorType, string $errorMessage, array $errorContext = []): self
-    {
-        $this->detailedErrors[] = [
-            'type' => $errorType,
-            'message' => $errorMessage,
             'context' => $errorContext,
-            'stage' => $this->compilationStage,
-            'timestamp' => now()->toISOString(),
+            'failed_at' => microtime(true),
         ];
-        
         return $this;
     }
 
     /**
-     * Update compilation progress information in the exception context.
+     * Get compilation statistics and progress information.
      * 
-     * This method allows the compilation process to provide detailed
-     * information about progress and statistics, helping developers
-     * understand what was accomplished before the failure occurred.
+     * Statistics provide quantitative information about the compilation
+     * process and can help identify performance issues or scope problems.
      *
-     * @param array $progressData Updated compilation progress information
+     * @return array Compilation statistics
+     */
+    public function getCompilationStats(): array
+    {
+        return $this->compilationStats;
+    }
+
+    /**
+     * Update compilation statistics with new information.
+     * 
+     * This method allows the compilation process to build up comprehensive
+     * statistics about its progress and performance.
+     *
+     * @param array $stats Statistics to add or update
      * @return self Returns self for method chaining
      */
-    public function updateCompilationProgress(array $progressData): self
+    public function updateCompilationStats(array $stats): self
     {
-        $this->compilationProgress = array_merge($this->compilationProgress, $progressData);
+        $this->compilationStats = array_merge($this->compilationStats, $stats);
         return $this;
     }
 
     /**
-     * Get the appropriate HTTP status code for compilation failures.
+     * Get additional compilation context information.
      * 
-     * Compilation failures typically indicate server-side processing issues
-     * rather than client request problems, so most compilation errors
-     * should return 500-level status codes that indicate server errors.
+     * Compilation context includes configuration values, environment
+     * information, and other details that might affect compilation.
      *
-     * @return int HTTP status code appropriate for this compilation failure
+     * @return array Compilation context information
+     */
+    public function getCompilationContext(): array
+    {
+        return $this->compilationContext;
+    }
+
+    /**
+     * Get the appropriate HTTP status code for this compilation error.
+     * 
+     * Compilation errors typically occur during development or deployment
+     * processes rather than runtime request handling, but they may need
+     * to provide HTTP responses in certain contexts.
+     *
+     * @return int Appropriate HTTP status code
      */
     public function getHttpStatusCode(): int
     {
-        // Map compilation failure types to appropriate HTTP status codes
         return match ($this->errorCode) {
-            'MISSING_TEMPLATE_DIRECTORIES',
-            'INVALID_TEMPLATE_DIRECTORY',
-            'MISSING_OUTPUT_PATH',
-            'OUTPUT_DIRECTORY_CREATION_FAILED',
-            'OUTPUT_DIRECTORY_NOT_WRITABLE' => 500, // Internal Server Error - configuration issues
-            
-            'TEMPLATE_FILE_NOT_FOUND',
-            'TEMPLATE_FILE_READ_FAILED' => 500, // Internal Server Error - file system issues
-            
-            'ROUTE_VALIDATION_FAILED' => 422, // Unprocessable Entity - validation issues
-            
-            'ROUTES_FILE_WRITE_FAILED',
-            'ROUTES_FILE_MOVE_FAILED',
-            'ROUTES_FILE_DELETE_FAILED' => 500, // Internal Server Error - file system issues
-            
-            'COMPILATION_FAILED' => 500, // Internal Server Error - general compilation failure
-            
+            'MISSING_TEMPLATE_DIRECTORIES' => 404, // Not Found
+            'TEMPLATE_FILE_READ_FAILED' => 403, // Forbidden
+            'ROUTE_VALIDATION_FAILED' => 422, // Unprocessable Entity
+            'OUTPUT_DIRECTORY_CREATION_FAILED' => 500, // Internal Server Error
+            'ROUTES_FILE_WRITE_FAILED' => 500, // Internal Server Error
             default => 500 // Default to Internal Server Error for compilation issues
         };
     }
 
     /**
-     * Determine if this compilation failure should be reported to monitoring systems.
+     * Determine whether this compilation exception should be reported to monitoring systems.
      * 
-     * Compilation failures are typically important enough to warrant reporting
-     * because they indicate issues with application deployment or configuration
-     * that could affect production deployments. However, some development-time
-     * compilation issues might not need external reporting.
+     * Compilation errors generally indicate application configuration or
+     * development issues that should be reported and addressed, but the
+     * reporting behavior can be tuned based on error type and environment.
      *
-     * @return bool True if this compilation failure should be reported
+     * @return bool Whether this exception should be reported
      */
     public function shouldReport(): bool
     {
-        // Development-time compilation issues that might not warrant external reporting
-        $developmentErrors = [
-            'ROUTE_VALIDATION_FAILED',
-            'TEMPLATE_FILE_NOT_FOUND'
-        ];
-
-        // In development environments, some compilation failures are expected during debugging
-        if (app()->environment(['local', 'development']) && in_array($this->errorCode, $developmentErrors)) {
-            return false;
-        }
-
-        // Configuration and file system errors should always be reported
-        $criticalErrors = [
+        // Always report file system errors as they indicate configuration problems
+        if (in_array($this->errorCode, [
             'OUTPUT_DIRECTORY_CREATION_FAILED',
-            'OUTPUT_DIRECTORY_NOT_WRITABLE',
             'ROUTES_FILE_WRITE_FAILED',
-            'ROUTES_FILE_MOVE_FAILED'
-        ];
-
-        if (in_array($this->errorCode, $criticalErrors)) {
+            'TEMPLATE_FILE_READ_FAILED'
+        ])) {
             return true;
         }
 
-        // Report compilation failures in production environments
-        return app()->environment('production');
+        // Report route validation failures in production but not necessarily in development
+        if ($this->errorCode === 'ROUTE_VALIDATION_FAILED') {
+            return app()->environment('production', 'staging');
+        }
+
+        // Report missing template directories as configuration issues
+        if ($this->errorCode === 'MISSING_TEMPLATE_DIRECTORIES') {
+            return true;
+        }
+
+        // Default to reporting compilation failures
+        return true;
     }
 
     /**
-     * Initialize compilation-specific error details and suggestions.
+     * Initialize error-specific details based on the compilation stage and error code.
      * 
-     * This method provides targeted guidance for different types of compilation
-     * failures, helping developers understand not just what went wrong during
-     * compilation, but how to organize their templates and controllers to
-     * work effectively with FlashHALT's compilation system.
+     * This method sets up suggestions and documentation links that are specifically
+     * relevant to compilation failures, providing educational guidance that helps
+     * developers understand and fix compilation problems.
      */
     protected function initializeSpecificErrorDetails(): void
     {
-        // Add compilation-specific suggestions based on the error code and context
+        // Add stage-specific suggestions based on where compilation failed
+        match ($this->compilationStage) {
+            'initialization' => $this->addInitializationSuggestions(),
+            'template_discovery' => $this->addTemplateDiscoverySuggestions(),
+            'route_extraction' => $this->addRouteExtractionSuggestions(),
+            'route_validation' => $this->addRouteValidationSuggestions(),
+            'code_generation' => $this->addCodeGenerationSuggestions(),
+            'file_writing' => $this->addFileWritingSuggestions(),
+            default => $this->addGeneralCompilationSuggestions()
+        };
+
+        // Add error-code-specific suggestions
         $this->addCompilationSpecificSuggestions();
-        
-        // Add documentation links relevant to route compilation
-        $this->addDocumentationLink('FlashHALT Compilation Guide', 'https://flashhalt.dev/docs/compilation');
-        $this->addDocumentationLink('Template Organization Best Practices', 'https://flashhalt.dev/docs/templates');
-        $this->addDocumentationLink('Production Deployment Guide', 'https://flashhalt.dev/docs/deployment');
-        
-        // Add stage-specific guidance based on where compilation failed
-        $this->addStageSpecificGuidance();
-        
-        // Add analysis of compilation context if available
-        $this->addCompilationAnalysis();
     }
 
     /**
-     * Add suggestions specific to the compilation failure type.
+     * Add suggestions specific to compilation initialization failures.
+     */
+    protected function addInitializationSuggestions(): void
+    {
+        $this->addSuggestion('Check FlashHALT configuration in config/flashhalt.php');
+        $this->addSuggestion('Verify that all required directories exist and are readable');
+        $this->addSuggestion('Ensure the compilation configuration is valid and complete');
+        $this->addSuggestion('Check that the application environment supports compilation operations');
+    }
+
+    /**
+     * Add suggestions specific to template discovery failures.
+     */
+    protected function addTemplateDiscoverySuggestions(): void
+    {
+        $this->addSuggestion('Verify that template directories exist and are readable');
+        $this->addSuggestion('Check the template_directories configuration setting');
+        $this->addSuggestion('Ensure template files have the correct extensions (.blade.php)');
+        $this->addSuggestion('Verify filesystem permissions for template directories');
+    }
+
+    /**
+     * Add suggestions specific to route extraction failures.
+     */
+    protected function addRouteExtractionSuggestions(): void
+    {
+        $this->addSuggestion('Check that FlashHALT route patterns in templates are properly formatted');
+        $this->addSuggestion('Verify that HTMX attributes use correct FlashHALT syntax');
+        $this->addSuggestion('Ensure route patterns follow the controller@method or namespace.controller@method format');
+        $this->addSuggestion('Review template files for syntax errors that might affect parsing');
+    }
+
+    /**
+     * Add suggestions specific to route validation failures.
+     */
+    protected function addRouteValidationSuggestions(): void
+    {
+        $this->addSuggestion('Review failed routes and ensure referenced controllers exist in the expected locations');
+        $this->addSuggestion('Check that controller methods are public and follow Laravel naming conventions');
+        $this->addSuggestion('Verify that route patterns in templates follow the format: controller@method or namespace.controller@method');
+        $this->addSuggestion('Consider adjusting the validation level in config/flashhalt.php if using experimental patterns');
+        
+        // Add specific information about failed routes if available
+        if (!empty($this->failedRoutes)) {
+            $failedCount = count($this->failedRoutes);
+            $this->addSuggestion("Review the {$failedCount} failed routes listed in the detailed error information");
+            
+            // Show examples of failed routes for context
+            $exampleFailures = array_slice($this->failedRoutes, 0, 3);
+            foreach ($exampleFailures as $failure) {
+                $this->addSuggestion("Failed route example: {$failure['pattern']} - {$failure['error']}");
+            }
+        }
+    }
+
+    /**
+     * Add suggestions specific to code generation failures.
+     */
+    protected function addCodeGenerationSuggestions(): void
+    {
+        $this->addSuggestion('Check that the output directory exists and is writable');
+        $this->addSuggestion('Verify that there is sufficient disk space for generated files');
+        $this->addSuggestion('Ensure that the compilation template files are valid and accessible');
+        $this->addSuggestion('Check for any syntax errors in the code generation templates');
+    }
+
+    /**
+     * Add suggestions specific to file writing failures.
+     */
+    protected function addFileWritingSuggestions(): void
+    {
+        $this->addSuggestion('Verify that the output directory exists and is writable');
+        $this->addSuggestion('Check filesystem permissions for the routes output location');
+        $this->addSuggestion('Ensure that there is sufficient disk space available');
+        $this->addSuggestion('Verify that no other process is locking the output files');
+    }
+
+    /**
+     * Add general compilation suggestions that apply to multiple failure types.
+     */
+    protected function addGeneralCompilationSuggestions(): void
+    {
+        $this->addSuggestion('Check the compilation configuration in config/flashhalt.php');
+        $this->addSuggestion('Verify that all dependencies are properly installed and configured');
+        $this->addSuggestion('Consider running the compilation with debug mode enabled for more detailed output');
+        $this->addSuggestion('Review the FlashHALT documentation for compilation best practices');
+    }
+
+    /**
+     * Add specific suggestions for different compilation error types.
      * 
      * This method provides targeted advice for different categories of
      * compilation failures, helping developers understand both what went
@@ -437,211 +494,47 @@ class RouteCompilerException extends FlashHaltException
     }
 
     /**
-     * Add specific suggestions for route validation failures during compilation.
-     */
-    protected function addRouteValidationSuggestions(): void
-    {
-        $this->addSuggestion('Review failed routes and ensure referenced controllers exist in the expected locations');
-        $this->addSuggestion('Check that controller methods are public and follow Laravel naming conventions');
-        $this->addSuggestion('Verify that route patterns in templates follow the format: controller@method or namespace.controller@method');
-        $this->addSuggestion('Consider adjusting the validation level in config/flashhalt.php if using experimental patterns');
-        
-        // Add specific information about failed routes if available
-        if (!empty($this->failedRoutes)) {
-            $failedCount = count($this->failedRoutes);
-            $this->addSuggestion("Review the {$failedCount} failed routes listed in the detailed error information");
-            
-            // Show examples of failed routes for context
-            $exampleFailures = array_slice($this->failedRoutes, 0, 3);
-            foreach ($exampleFailures as $failure) {
-                $this->addSuggestion("Failed route example: {$failure['pattern']} - {$failure['error']}");
-            }
-        }
-    }
-
-    /**
      * Add specific suggestions for template file reading issues.
      */
     protected function addTemplateReadSuggestions(): void
     {
-        $this->addSuggestion('Check file permissions on template directories and files');
-        $this->addSuggestion('Ensure template files are not corrupted or locked by other processes');
-        $this->addSuggestion('Verify that the web server process has read access to template directories');
-        $this->addSuggestion('Consider excluding problematic files using exclude_patterns in compilation configuration');
+        $this->addSuggestion('Check filesystem permissions for template files');
+        $this->addSuggestion('Verify that template files are not corrupted or locked by other processes');
+        $this->addSuggestion('Ensure template files contain valid Blade syntax');
+        $this->addSuggestion('Consider checking for special characters or encoding issues in template files');
     }
 
     /**
-     * Add specific suggestions for output directory and file writing issues.
+     * Add specific suggestions for output directory issues.
      */
     protected function addOutputDirectorySuggestions(): void
     {
-        $this->addSuggestion('Ensure the output directory for compiled routes exists and is writable');
-        $this->addSuggestion('Check file permissions on the routes directory and parent directories');
-        $this->addSuggestion('Verify that the web server process has write access to the output location');
-        $this->addSuggestion('Consider using a different output path if the current location has permission restrictions');
+        $this->addSuggestion('Create the output directory manually and set appropriate permissions');
+        $this->addSuggestion('Check that the parent directory is writable');
+        $this->addSuggestion('Verify that the configured output path is valid and accessible');
+        $this->addSuggestion('Consider using a different output location if the current one has permission issues');
     }
 
     /**
-     * Add specific suggestions for file writing failures.
+     * Add specific suggestions for file writing issues.
      */
     protected function addFileWriteSuggestions(): void
     {
-        $this->addSuggestion('Check available disk space on the server');
-        $this->addSuggestion('Verify file permissions on the target directory');
-        $this->addSuggestion('Ensure no other processes are locking the output file');
-        $this->addSuggestion('Consider running compilation with elevated permissions if necessary');
+        $this->addSuggestion('Check that the output directory has write permissions');
+        $this->addSuggestion('Verify that there is sufficient disk space available');
+        $this->addSuggestion('Ensure that the output file is not locked by other processes');
+        $this->addSuggestion('Consider running the compilation with elevated permissions if necessary');
     }
 
     /**
-     * Add general suggestions for unspecified compilation failures.
-     */
-    protected function addGeneralCompilationSuggestions(): void
-    {
-        $this->addSuggestion('Review the FlashHALT compilation documentation for troubleshooting guidance');
-        $this->addSuggestion('Check the Laravel log files for additional error details');
-        $this->addSuggestion('Verify that your application follows Laravel controller organization conventions');
-        $this->addSuggestion('Consider running compilation with debug mode enabled for more detailed error information');
-    }
-
-    /**
-     * Add guidance specific to the compilation stage where the failure occurred.
+     * Create a comprehensive compilation report for debugging purposes.
      * 
-     * Different compilation stages have different types of issues and require
-     * different debugging approaches. This method provides stage-specific
-     * guidance that helps developers focus their efforts appropriately.
-     */
-    protected function addStageSpecificGuidance(): void
-    {
-        match ($this->compilationStage) {
-            'initialization' => $this->addSuggestion(
-                'The compilation failed during initialization. Check your FlashHALT configuration in config/flashhalt.php'
-            ),
-            'template_discovery' => $this->addSuggestion(
-                'The compilation failed while discovering template files. Check your template directory configuration and file permissions'
-            ),
-            'route_extraction' => $this->addSuggestion(
-                'The compilation failed while parsing templates for routes. Check for syntax errors in your Blade templates'
-            ),
-            'route_validation' => $this->addSuggestion(
-                'The compilation failed during route validation. Check that referenced controllers and methods exist and are accessible'
-            ),
-            'code_generation' => $this->addSuggestion(
-                'The compilation failed while generating route code. This may indicate issues with route patterns or controller resolution'
-            ),
-            'file_writing' => $this->addSuggestion(
-                'The compilation failed while writing the compiled routes file. Check file permissions and available disk space'
-            ),
-            default => $this->addSuggestion(
-                'The compilation failed at an unknown stage. Review the error details and check your application configuration'
-            )
-        };
-    }
-
-    /**
-     * Add analysis of compilation context to provide insights for debugging.
-     * 
-     * This method analyzes the available compilation context to provide
-     * intelligent suggestions and insights that help developers understand
-     * the broader context of the compilation failure.
-     */
-    protected function addCompilationAnalysis(): void
-    {
-        // Analyze template file context
-        if (!empty($this->templateFiles)) {
-            $templateCount = count($this->templateFiles);
-            $this->addSuggestion("Compilation was processing {$templateCount} template files when the error occurred");
-            
-            // Provide insights about template organization
-            if ($templateCount > 100) {
-                $this->addSuggestion('Large number of templates detected. Consider using exclude_patterns to optimize compilation performance');
-            }
-        }
-
-        // Analyze discovered routes context
-        if (!empty($this->discoveredRoutes)) {
-            $routeCount = count($this->discoveredRoutes);
-            $this->addSuggestion("Successfully discovered {$routeCount} routes before the failure occurred");
-        }
-
-        // Analyze failed routes patterns
-        if (!empty($this->failedRoutes)) {
-            $this->analyzeFailedRoutePatterns();
-        }
-
-        // Analyze compilation progress
-        if (!empty($this->compilationProgress)) {
-            $this->analyzeCompilationProgress();
-        }
-    }
-
-    /**
-     * Analyze patterns in failed routes to provide targeted suggestions.
-     * 
-     * This method looks for common patterns in route validation failures
-     * to provide more specific guidance about what might be causing
-     * systematic issues in the application's route organization.
-     */
-    protected function analyzeFailedRoutePatterns(): void
-    {
-        $failureReasons = array_column($this->failedRoutes, 'error');
-        $reasonCounts = array_count_values($failureReasons);
-        
-        // Identify the most common failure reasons
-        arsort($reasonCounts);
-        $mostCommonReason = array_key_first($reasonCounts);
-        $mostCommonCount = $reasonCounts[$mostCommonReason];
-        
-        if ($mostCommonCount > 1) {
-            $this->addSuggestion("Most common failure reason: '{$mostCommonReason}' ({$mostCommonCount} routes affected)");
-            
-            // Provide specific guidance based on common failure patterns
-            if (str_contains($mostCommonReason, 'Controller not found')) {
-                $this->addSuggestion('Multiple controllers not found suggests possible namespace or naming convention issues');
-            } elseif (str_contains($mostCommonReason, 'Method not found')) {
-                $this->addSuggestion('Multiple missing methods suggests possible method naming or visibility issues');
-            }
-        }
-    }
-
-    /**
-     * Analyze compilation progress to provide insights about the failure.
-     * 
-     * This method examines compilation statistics and progress information
-     * to help developers understand how far the compilation advanced and
-     * what might have caused it to fail.
-     */
-    protected function analyzeCompilationProgress(): void
-    {
-        $progress = $this->compilationProgress;
-        
-        if (isset($progress['templates_scanned'], $progress['routes_discovered'])) {
-            $templatesScanned = $progress['templates_scanned'];
-            $routesDiscovered = $progress['routes_discovered'];
-            
-            if ($templatesScanned > 0 && $routesDiscovered === 0) {
-                $this->addSuggestion('No routes were discovered despite scanning templates. Check that templates contain HTMX patterns with hx/ prefixes');
-            } elseif ($routesDiscovered > 0) {
-                $this->addSuggestion("Progress: scanned {$templatesScanned} templates and discovered {$routesDiscovered} routes before failure");
-            }
-        }
-
-        if (isset($progress['compilation_time'])) {
-            $compilationTime = $progress['compilation_time'];
-            if ($compilationTime > 10000) { // 10 seconds
-                $this->addSuggestion('Compilation was taking a long time before failing. Consider optimizing template organization or using exclude patterns');
-            }
-        }
-    }
-
-    /**
-     * Create a comprehensive compilation failure report for debugging.
-     * 
-     * This method generates detailed reports that include all available
-     * information about the compilation failure, organized in a way that
-     * makes debugging efficient and systematic.
+     * This method generates detailed reports that include all the information
+     * developers need to understand and fix compilation problems, making
+     * debugging sessions more efficient and educational.
      *
      * @param bool $includeTrace Whether to include stack trace information
-     * @return array Comprehensive compilation failure report
+     * @return array Comprehensive compilation report
      */
     public function toCompilationReport(bool $includeTrace = false): array
     {
@@ -653,154 +546,155 @@ class RouteCompilerException extends FlashHaltException
         $report['template_files'] = $this->templateFiles;
         $report['discovered_routes'] = $this->discoveredRoutes;
         $report['failed_routes'] = $this->failedRoutes;
-        $report['compilation_progress'] = $this->compilationProgress;
-        $report['detailed_errors'] = $this->detailedErrors;
-        $report['compilation_config'] = $this->compilationConfig;
+        $report['compilation_stats'] = $this->compilationStats;
+        $report['compilation_context'] = $this->compilationContext;
         
-        // Add analysis and insights
-        $report['failure_analysis'] = $this->generateFailureAnalysis();
-        $report['recommendations'] = $this->generateRecommendations();
+        // Add analysis and summary information
+        $report['compilation_summary'] = $this->getCompilationSummary();
+        $report['failure_analysis'] = $this->analyzeCompilationFailure();
         
         return $report;
     }
 
     /**
-     * Generate analysis of the compilation failure for debugging insights.
+     * Get a summary of the compilation process and its results.
      * 
-     * This method creates intelligent analysis of the failure context to
-     * help developers understand not just what went wrong, but why it
-     * might have happened and what patterns in their application might
-     * be contributing to the problem.
+     * This method provides a high-level overview of what the compilation
+     * process accomplished before failing, helping developers understand
+     * the scope and progress of compilation.
      *
-     * @return array Analysis results and insights
+     * @return array Compilation summary information
      */
-    protected function generateFailureAnalysis(): array
+    protected function getCompilationSummary(): array
     {
-        $analysis = [
-            'failure_stage' => $this->compilationStage,
-            'total_templates' => count($this->templateFiles),
-            'total_discovered_routes' => count($this->discoveredRoutes),
-            'total_failed_routes' => count($this->failedRoutes),
-            'total_detailed_errors' => count($this->detailedErrors),
+        return [
+            'stage_reached' => $this->compilationStage,
+            'templates_processed' => count($this->templateFiles),
+            'routes_discovered' => count($this->discoveredRoutes),
+            'routes_failed' => count($this->failedRoutes),
+            'success_rate' => $this->calculateSuccessRate(),
+            'compilation_time' => $this->compilationStats['compilation_time'] ?? 'unknown',
         ];
+    }
 
-        // Analyze failure patterns
+    /**
+     * Analyze the compilation failure to provide insights about what went wrong.
+     * 
+     * This method examines the compilation context and provides intelligent
+     * analysis about the likely causes of the failure and what developers
+     * can do to address them.
+     *
+     * @return array Failure analysis results
+     */
+    protected function analyzeCompilationFailure(): array
+    {
+        $analysis = [];
+        
+        // Analyze the failure stage
+        $analysis['failure_stage'] = $this->compilationStage;
+        $analysis['stage_description'] = $this->getStageDescription($this->compilationStage);
+        
+        // Analyze route failures if applicable
         if (!empty($this->failedRoutes)) {
-            $analysis['failure_patterns'] = $this->analyzeFailurePatterns();
+            $analysis['failed_route_count'] = count($this->failedRoutes);
+            $analysis['common_failure_patterns'] = $this->identifyCommonFailurePatterns();
         }
-
-        // Analyze template distribution
+        
+        // Analyze template involvement
         if (!empty($this->templateFiles)) {
-            $analysis['template_analysis'] = $this->analyzeTemplateDistribution();
+            $analysis['template_count'] = count($this->templateFiles);
+            $analysis['template_analysis'] = $this->analyzeTemplateFiles();
         }
-
+        
         return $analysis;
     }
 
     /**
-     * Analyze patterns in compilation failures to identify systematic issues.
+     * Calculate the success rate of route processing during compilation.
+     * 
+     * @return float Success rate as a percentage
      */
-    protected function analyzeFailurePatterns(): array
+    protected function calculateSuccessRate(): float
     {
-        $patterns = [
-            'error_types' => [],
-            'affected_namespaces' => [],
-            'common_issues' => []
-        ];
+        $total = count($this->discoveredRoutes);
+        $failed = count($this->failedRoutes);
+        
+        if ($total === 0) {
+            return 0.0;
+        }
+        
+        return (($total - $failed) / $total) * 100;
+    }
 
+    /**
+     * Get a description of what happens during a specific compilation stage.
+     * 
+     * @param string $stage The compilation stage
+     * @return string Description of the stage
+     */
+    protected function getStageDescription(string $stage): string
+    {
+        return match ($stage) {
+            'initialization' => 'Setting up compilation environment and validating configuration',
+            'template_discovery' => 'Scanning directories to find and catalog template files',
+            'route_extraction' => 'Parsing templates to extract FlashHALT route patterns',
+            'route_validation' => 'Validating discovered routes for safety and functionality',
+            'code_generation' => 'Generating optimized route definitions from validated routes',
+            'file_writing' => 'Writing compiled route definitions to the filesystem',
+            default => 'Unknown compilation stage'
+        };
+    }
+
+    /**
+     * Identify common patterns in route failures to provide targeted guidance.
+     * 
+     * @return array Common failure patterns and their frequencies
+     */
+    protected function identifyCommonFailurePatterns(): array
+    {
+        $patterns = [];
+        
         foreach ($this->failedRoutes as $failure) {
-            // Categorize error types
-            $errorType = $this->categorizeError($failure['error']);
-            $patterns['error_types'][$errorType] = ($patterns['error_types'][$errorType] ?? 0) + 1;
-
-            // Analyze affected namespaces
-            if (str_contains($failure['pattern'], '.')) {
-                $namespaceParts = explode('.', $failure['pattern']);
-                $namespace = $namespaceParts[0];
-                $patterns['affected_namespaces'][$namespace] = ($patterns['affected_namespaces'][$namespace] ?? 0) + 1;
+            $error = $failure['error'] ?? 'Unknown error';
+            
+            // Categorize errors into common patterns
+            if (str_contains($error, 'not found')) {
+                $patterns['not_found'] = ($patterns['not_found'] ?? 0) + 1;
+            } elseif (str_contains($error, 'not accessible')) {
+                $patterns['not_accessible'] = ($patterns['not_accessible'] ?? 0) + 1;
+            } elseif (str_contains($error, 'blacklisted')) {
+                $patterns['security_blocked'] = ($patterns['security_blocked'] ?? 0) + 1;
+            } else {
+                $patterns['other'] = ($patterns['other'] ?? 0) + 1;
             }
         }
-
+        
         return $patterns;
     }
 
     /**
-     * Categorize error messages into general types for pattern analysis.
-     */
-    protected function categorizeError(string $errorMessage): string
-    {
-        if (str_contains($errorMessage, 'Controller not found')) {
-            return 'missing_controller';
-        } elseif (str_contains($errorMessage, 'Method not found')) {
-            return 'missing_method';
-        } elseif (str_contains($errorMessage, 'Security validation')) {
-            return 'security_violation';
-        } elseif (str_contains($errorMessage, 'Pattern')) {
-            return 'pattern_error';
-        } else {
-            return 'other';
-        }
-    }
-
-    /**
-     * Analyze template file distribution to understand application structure.
-     */
-    protected function analyzeTemplateDistribution(): array
-    {
-        $distribution = [
-            'total_files' => count($this->templateFiles),
-            'directory_distribution' => [],
-            'file_types' => []
-        ];
-
-        foreach ($this->templateFiles as $templateFile) {
-            // Analyze directory distribution
-            $directory = dirname($templateFile);
-            $distribution['directory_distribution'][$directory] = 
-                ($distribution['directory_distribution'][$directory] ?? 0) + 1;
-
-            // Analyze file types
-            $extension = pathinfo($templateFile, PATHINFO_EXTENSION);
-            $distribution['file_types'][$extension] = 
-                ($distribution['file_types'][$extension] ?? 0) + 1;
-        }
-
-        return $distribution;
-    }
-
-    /**
-     * Generate actionable recommendations based on the compilation failure.
+     * Analyze template files for common issues or patterns.
      * 
-     * This method creates specific, actionable recommendations that help
-     * developers fix the immediate problem and improve their application
-     * organization to prevent similar issues in the future.
-     *
-     * @return array Array of specific recommendations
+     * @return array Template file analysis results
      */
-    protected function generateRecommendations(): array
+    protected function analyzeTemplateFiles(): array
     {
-        $recommendations = [];
-
-        // Stage-specific recommendations
-        match ($this->compilationStage) {
-            'initialization' => $recommendations[] = 'Review and validate your FlashHALT configuration settings',
-            'template_discovery' => $recommendations[] = 'Check template directory configuration and file permissions',
-            'route_extraction' => $recommendations[] = 'Validate Blade template syntax and HTMX pattern format',
-            'route_validation' => $recommendations[] = 'Ensure all referenced controllers and methods exist and are accessible',
-            'code_generation' => $recommendations[] = 'Review route patterns for compatibility with Laravel routing conventions',
-            'file_writing' => $recommendations[] = 'Check file system permissions and available disk space'
-        };
-
-        // Failure-specific recommendations
-        if (!empty($this->failedRoutes)) {
-            $recommendations[] = 'Focus on fixing the failed routes before attempting compilation again';
-            $recommendations[] = 'Consider using a less strict validation level during development';
+        $analysis = [
+            'total_files' => count($this->templateFiles),
+            'file_extensions' => [],
+            'directory_distribution' => [],
+        ];
+        
+        foreach ($this->templateFiles as $file) {
+            // Analyze file extensions
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+            $analysis['file_extensions'][$extension] = ($analysis['file_extensions'][$extension] ?? 0) + 1;
+            
+            // Analyze directory distribution
+            $directory = dirname($file);
+            $analysis['directory_distribution'][$directory] = ($analysis['directory_distribution'][$directory] ?? 0) + 1;
         }
-
-        if (count($this->templateFiles) > 50) {
-            $recommendations[] = 'Consider using exclude_patterns to optimize compilation performance';
-        }
-
-        return array_unique($recommendations);
+        
+        return $analysis;
     }
 }

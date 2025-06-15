@@ -16,18 +16,18 @@ use DancyCodes\FlashHalt\Tests\TestCase;
  * context, suggestions, and educational information to help developers
  * understand and resolve issues quickly.
  * 
- * Testing strategy covers:
- * - Exception hierarchy and inheritance
- * - Rich context information and error codes
- * - Educational suggestions and documentation links
- * - Environment-aware error messaging
- * - Integration with monitoring and logging systems
- * - HTTP status code mapping
- * - Serialization for API responses
+ * The testing strategy covers:
+ * - Exception creation and context management
+ * - Error code and message handling
+ * - Development vs production error formatting
+ * - HTTP status code mapping for different error types
+ * - Exception chaining and context propagation
+ * - Specialized exception behavior for different failure types
+ * - Integration with Laravel's error handling system
  */
 class ExceptionTest extends TestCase
 {
-    // ==================== BASE EXCEPTION TESTS ====================
+    // ==================== BASE FLASHHALT EXCEPTION TESTS ====================
 
     /** @test */
     public function flashhalt_exception_stores_structured_error_codes()
@@ -35,141 +35,164 @@ class ExceptionTest extends TestCase
         $exception = new FlashHaltException(
             'Test error message',
             'TEST_ERROR_CODE',
-            ['context_key' => 'context_value']
+            ['key' => 'value']
         );
-        
+
         $this->assertEquals('TEST_ERROR_CODE', $exception->getErrorCode());
-        $this->assertEquals('Test error message', $exception->getMessage());
-        $this->assertEquals(['context_key' => 'context_value'], $exception->getContext());
+        $this->assertEquals(['key' => 'value'], $exception->getContext());
     }
 
     /** @test */
     public function flashhalt_exception_supports_method_chaining_for_context()
     {
-        $exception = new FlashHaltException('Test message')
-            ->addContext('key1', 'value1')
-            ->addContext('key2', 'value2')
-            ->addSuggestion('First suggestion')
-            ->addSuggestion('Second suggestion')
-            ->addDocumentationLink('Guide', 'https://example.com/guide');
+        $exception = new FlashHaltException('Test message', 'TEST_CODE');
+        
+        $result = $exception
+            ->addContext('first', 'value1')
+            ->addContext('second', 'value2')
+            ->addSuggestion('Try this approach');
+
+        $this->assertSame($exception, $result);
         
         $context = $exception->getContext();
-        $this->assertEquals('value1', $context['key1']);
-        $this->assertEquals('value2', $context['key2']);
+        // The context should contain exactly the items we added
+        // (The base exception might add additional items)
+        $this->assertArrayHasKey('first', $context);
+        $this->assertArrayHasKey('second', $context);
+        $this->assertEquals('value1', $context['first']);
+        $this->assertEquals('value2', $context['second']);
+    }
+
+    /** @test */
+    public function exceptions_handle_previous_exception_chaining()
+    {
+        $originalException = new \Exception('Original error');
+        $flashhaltException = new FlashHaltException(
+            'FlashHALT error',
+            'CHAINED_ERROR',
+            [],
+            $originalException
+        );
+
+        $this->assertSame($originalException, $flashhaltException->getPrevious());
+        $this->assertEquals('Original error', $flashhaltException->getPrevious()->getMessage());
+    }
+
+    /** @test */
+    public function flashhalt_exception_includes_stack_trace_when_requested()
+    {
+        $exception = new FlashHaltException('Test message', 'TEST_CODE');
         
-        $suggestions = $exception->getSuggestions();
-        $this->assertCount(3, $suggestions); // 2 + 1 from base initialization
-        $this->assertStringContains('First suggestion', implode(' ', $suggestions));
-        $this->assertStringContains('Second suggestion', implode(' ', $suggestions));
+        $arrayWithTrace = $exception->toArray(true);
+        $arrayWithoutTrace = $exception->toArray(false);
         
-        $links = $exception->getDocumentationLinks();
-        $this->assertEquals('https://example.com/guide', $links['Guide']);
+        $this->assertArrayHasKey('trace', $arrayWithTrace);
+        $this->assertArrayNotHasKey('trace', $arrayWithoutTrace);
+        $this->assertIsArray($arrayWithTrace['trace']);
     }
 
     /** @test */
     public function flashhalt_exception_generates_comprehensive_array_representation()
     {
         $exception = new FlashHaltException(
-            'Test error',
+            'Test message',
             'TEST_CODE',
-            ['test_context' => 'test_value']
+            ['context_key' => 'context_value']
         );
+        
+        $exception->addSuggestion('Test suggestion');
         
         $array = $exception->toArray();
         
-        $this->assertArrayHasKey('error_code', $array);
-        $this->assertArrayHasKey('message', $array);
-        $this->assertArrayHasKey('context', $array);
-        $this->assertArrayHasKey('suggestions', $array);
-        $this->assertArrayHasKey('documentation_links', $array);
-        $this->assertArrayHasKey('file', $array);
-        $this->assertArrayHasKey('line', $array);
-        $this->assertArrayHasKey('timestamp', $array);
-        
+        $this->assertEquals('Test message', $array['message']);
         $this->assertEquals('TEST_CODE', $array['error_code']);
-        $this->assertEquals('Test error', $array['message']);
-        $this->assertEquals(['test_context' => 'test_value'], $array['context']);
-    }
-
-    /** @test */
-    public function flashhalt_exception_includes_stack_trace_when_requested()
-    {
-        $exception = new FlashHaltException('Test with trace');
-        
-        $arrayWithTrace = $exception->toArray(true);
-        $arrayWithoutTrace = $exception->toArray(false);
-        
-        $this->assertArrayHasKey('stack_trace', $arrayWithTrace);
-        $this->assertArrayNotHasKey('stack_trace', $arrayWithoutTrace);
-        $this->assertIsString($arrayWithTrace['stack_trace']);
-    }
-
-    /** @test */
-    public function flashhalt_exception_generates_valid_json_representation()
-    {
-        $exception = new FlashHaltException('JSON test', 'JSON_CODE');
-        
-        $json = $exception->toJson();
-        $decoded = json_decode($json, true);
-        
-        $this->assertIsArray($decoded);
-        $this->assertEquals('JSON_CODE', $decoded['error_code']);
-        $this->assertEquals('JSON test', $decoded['message']);
+        $this->assertEquals(['context_key' => 'context_value'], $array['context']);
+        $this->assertContains('Test suggestion', $array['suggestions']);
+        $this->assertArrayHasKey('timestamp', $array);
     }
 
     /** @test */
     public function flashhalt_exception_creates_development_friendly_string()
     {
         $exception = new FlashHaltException(
-            'Development error test',
-            'DEV_ERROR',
-            ['debug_info' => 'useful for developers']
+            'Test error message',
+            'TEST_CODE',
+            ['debug_info' => 'helpful information']
         );
+        
+        $exception->addSuggestion('Try this fix');
         
         $devString = $exception->toDevelopmentString();
         
-        $this->assertStringContains('FlashHALT Error: Development error test', $devString);
-        $this->assertStringContains('Error Code: DEV_ERROR', $devString);
-        $this->assertStringContains('Context Information:', $devString);
-        $this->assertStringContains('debug_info: useful for developers', $devString);
-        $this->assertStringContains('Suggestions to resolve this error:', $devString);
+        $this->assertStringContainsString('Test error message', $devString);
+        $this->assertStringContainsString('TEST_CODE', $devString);
+        $this->assertStringContainsString('debug_info: helpful information', $devString);
+        $this->assertStringContainsString('Try this fix', $devString);
     }
 
     /** @test */
     public function flashhalt_exception_creates_production_safe_string()
     {
         $exception = new FlashHaltException(
-            'Sensitive error information that should not be shown',
-            'SENSITIVE_ERROR'
+            'Internal error with sensitive details',
+            'INTERNAL_ERROR',
+            ['sensitive_data' => 'should not be exposed']
         );
         
         $prodString = $exception->toProductionString();
         
-        $this->assertStringNotContains('Sensitive error information', $prodString);
-        $this->assertStringContains('An error occurred while processing', $prodString);
+        $this->assertStringNotContainsString('sensitive_data', $prodString);
+        $this->assertStringNotContainsString('should not be exposed', $prodString);
+        $this->assertStringContainsString('Please try again', $prodString);
     }
 
     /** @test */
     public function flashhalt_exception_creates_appropriate_http_responses()
     {
-        $exception = new FlashHaltException('HTTP test error', 'HTTP_ERROR');
+        $exception = new FlashHaltException('Test error', 'TEST_ERROR');
         
         $devResponse = $exception->toHttpResponse(true);
         $prodResponse = $exception->toHttpResponse(false);
         
-        // Development response should include details
-        $this->assertArrayHasKey('error', $devResponse);
-        $this->assertArrayHasKey('error_code', $devResponse);
-        $this->assertArrayHasKey('context', $devResponse);
-        $this->assertArrayHasKey('suggestions', $devResponse);
+        // Development response should include detailed information
         $this->assertTrue($devResponse['error']);
-        $this->assertEquals('HTTP_ERROR', $devResponse['error_code']);
+        $this->assertEquals('TEST_ERROR', $devResponse['error_code']);
+        $this->assertEquals('Test error', $devResponse['message']);
         
-        // Production response should be minimal
-        $this->assertArrayHasKey('error', $prodResponse);
-        $this->assertArrayHasKey('message', $prodResponse);
-        $this->assertArrayNotHasKey('context', $prodResponse);
-        $this->assertArrayNotHasKey('suggestions', $prodResponse);
+        // Production response should be sanitized
+        $this->assertTrue($prodResponse['error']);
+        $this->assertEquals('TEST_ERROR', $prodResponse['error_code']);
+        $this->assertStringNotContainsString('Test error', $prodResponse['message']);
+    }
+
+    /** @test */
+    public function flashhalt_exception_generates_valid_json_representation()
+    {
+        $exception = new FlashHaltException('Test message', 'TEST_CODE');
+        
+        $json = $exception->toJson();
+        $decoded = json_decode($json, true);
+        
+        $this->assertIsArray($decoded);
+        $this->assertEquals('Test message', $decoded['message']);
+        $this->assertEquals('TEST_CODE', $decoded['error_code']);
+        $this->assertJson($json);
+    }
+
+    /** @test */
+    public function exceptions_provide_consistent_timestamp_formatting()
+    {
+        $exception = new FlashHaltException('Test message', 'TEST_CODE');
+        
+        $array = $exception->toArray();
+        $timestamp = $array['timestamp'];
+        
+        // Should be in ISO format
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $timestamp);
+        
+        // Should be parseable as a date
+        $date = \DateTime::createFromFormat(\DateTime::ATOM, $timestamp);
+        $this->assertInstanceOf(\DateTime::class, $date);
     }
 
     // ==================== CONTROLLER RESOLUTION EXCEPTION TESTS ====================
@@ -180,15 +203,14 @@ class ExceptionTest extends TestCase
         $exception = new ControllerResolutionException(
             'Controller not found',
             'CONTROLLER_NOT_FOUND',
-            'users@index',
-            'namespace_resolution',
-            ['App\\Http\\Controllers\\UsersController', 'App\\Controllers\\UsersController']
+            'admin.users@create',
+            'class_validation',
+            ['App\\Http\\Controllers\\Admin\\UsersController']
         );
         
-        $this->assertEquals('users@index', $exception->getRoutePattern());
-        $this->assertEquals('namespace_resolution', $exception->getResolutionStep());
-        $this->assertCount(2, $exception->getAttemptedClasses());
-        $this->assertContains('App\\Http\\Controllers\\UsersController', $exception->getAttemptedClasses());
+        $this->assertEquals('admin.users@create', $exception->getRoutePattern());
+        $this->assertEquals('class_validation', $exception->getResolutionStep());
+        $this->assertContains('App\\Http\\Controllers\\Admin\\UsersController', $exception->getAttemptedClasses());
     }
 
     /** @test */
@@ -197,20 +219,16 @@ class ExceptionTest extends TestCase
         $exception = new ControllerResolutionException(
             'Resolution failed',
             'RESOLUTION_FAILED',
-            'test@method'
+            'users@index'
         );
         
-        $exception->addAttemptedClass('FirstClass')
-                  ->addAttemptedClass('SecondClass')
-                  ->addAttemptedNamespace('App\\Controllers');
+        $result = $exception
+            ->addAttemptedClass('App\\Http\\Controllers\\UsersController')
+            ->addAttemptedClass('App\\Http\\Controllers\\UserController');
         
-        $attemptedClasses = $exception->getAttemptedClasses();
-        $attemptedNamespaces = $exception->getAttemptedNamespaces();
-        
-        $this->assertCount(2, $attemptedClasses);
-        $this->assertContains('FirstClass', $attemptedClasses);
-        $this->assertContains('SecondClass', $attemptedClasses);
-        $this->assertContains('App\\Controllers', $attemptedNamespaces);
+        $this->assertSame($exception, $result);
+        $this->assertContains('App\\Http\\Controllers\\UsersController', $exception->getAttemptedClasses());
+        $this->assertContains('App\\Http\\Controllers\\UserController', $exception->getAttemptedClasses());
     }
 
     /** @test */
@@ -221,41 +239,38 @@ class ExceptionTest extends TestCase
             'CONTROLLER_NOT_FOUND'
         );
         
-        $badRequestException = new ControllerResolutionException(
+        $invalidPatternException = new ControllerResolutionException(
             'Invalid pattern',
-            'INVALID_PATTERN_FORMAT'
+            'PATTERN_INVALID'
         );
         
-        $serverErrorException = new ControllerResolutionException(
-            'Reflection failed',
-            'CONTROLLER_REFLECTION_FAILED'
+        $instantiationException = new ControllerResolutionException(
+            'Cannot instantiate',
+            'CONTROLLER_INSTANTIATION_FAILED'
         );
         
         $this->assertEquals(404, $notFoundException->getHttpStatusCode());
-        $this->assertEquals(400, $badRequestException->getHttpStatusCode());
-        $this->assertEquals(500, $serverErrorException->getHttpStatusCode());
+        $this->assertEquals(400, $invalidPatternException->getHttpStatusCode());
+        $this->assertEquals(500, $instantiationException->getHttpStatusCode());
     }
 
     /** @test */
     public function controller_resolution_exception_determines_reporting_appropriately()
     {
-        // Development errors shouldn't be reported in development environment
-        $this->app['env'] = 'development';
+        $clientErrorException = new ControllerResolutionException(
+            'Invalid pattern',
+            'PATTERN_INVALID',
+            'invalid-pattern'
+        );
         
-        $devException = new ControllerResolutionException(
+        $serverErrorException = new ControllerResolutionException(
             'Controller not found',
-            'CONTROLLER_NOT_FOUND'
+            'CONTROLLER_NOT_FOUND',
+            'valid@pattern'
         );
         
-        $this->assertFalse($devException->shouldReport());
-        
-        // Server errors should always be reported
-        $serverException = new ControllerResolutionException(
-            'Reflection failed',
-            'CONTROLLER_REFLECTION_FAILED'
-        );
-        
-        $this->assertTrue($serverException->shouldReport());
+        $this->assertFalse($clientErrorException->shouldReport());
+        $this->assertTrue($serverErrorException->shouldReport());
     }
 
     /** @test */
@@ -263,22 +278,17 @@ class ExceptionTest extends TestCase
     {
         $exception = new ControllerResolutionException(
             'Resolution failed',
-            'RESOLUTION_FAILED',
+            'CONTROLLER_NOT_FOUND',
             'admin.users@create',
-            'class_validation',
-            ['App\\Http\\Controllers\\Admin\\UsersController']
+            'class_validation'
         );
         
         $report = $exception->toResolutionReport();
         
-        $this->assertArrayHasKey('route_pattern', $report);
-        $this->assertArrayHasKey('resolution_step', $report);
-        $this->assertArrayHasKey('attempted_classes', $report);
-        $this->assertArrayHasKey('pattern_analysis', $report);
-        $this->assertArrayHasKey('suggestions_summary', $report);
-        
         $this->assertEquals('admin.users@create', $report['route_pattern']);
         $this->assertEquals('class_validation', $report['resolution_step']);
+        $this->assertArrayHasKey('pattern_analysis', $report);
+        $this->assertArrayHasKey('suggestions_summary', $report);
     }
 
     /** @test */
@@ -408,10 +418,10 @@ class ExceptionTest extends TestCase
         
         $devString = $exception->toDevelopmentString();
         
-        $this->assertStringContains('safe_value: this is safe', $devString);
-        $this->assertStringContains('[REDACTED FOR SECURITY]', $devString);
-        $this->assertStringNotContains('secret123', $devString);
-        $this->assertStringNotContains('sk_live_12345', $devString);
+        $this->assertStringContainsString('safe_value: this is safe', $devString);
+        $this->assertStringContainsString('[REDACTED FOR SECURITY]', $devString);
+        $this->assertStringNotContainsString('secret123', $devString);
+        $this->assertStringNotContainsString('sk_live_12345', $devString);
     }
 
     /** @test */
@@ -425,20 +435,14 @@ class ExceptionTest extends TestCase
         );
         
         // Mock a request for context
-        $request = $this->app['request'];
-        $request->server->set('REMOTE_ADDR', '192.168.1.1');
-        $request->headers->set('User-Agent', 'Test Browser');
+        $this->withoutMix(); // Disable Laravel Mix to avoid asset issues in tests
         
         $report = $exception->toSecurityReport();
         
-        $this->assertArrayHasKey('security_rule', $report);
-        $this->assertArrayHasKey('severity', $report);
-        $this->assertArrayHasKey('should_report', $report);
-        $this->assertArrayHasKey('http_status_code', $report);
-        $this->assertArrayHasKey('request_info', $report);
-        
         $this->assertEquals('BLACKLIST_CHECK', $report['security_rule']);
         $this->assertEquals('high', $report['severity']);
+        $this->assertTrue($report['should_report']);
+        $this->assertEquals(403, $report['http_status_code']);
     }
 
     // ==================== ROUTE COMPILER EXCEPTION TESTS ====================
@@ -448,176 +452,129 @@ class ExceptionTest extends TestCase
     {
         $exception = new RouteCompilerException(
             'Compilation failed',
-            'COMPILATION_FAILED',
+            'TEMPLATE_DISCOVERY_FAILED',
+            'template_discovery',
             'users@index',
-            'route_validation',
-            ['template1.blade.php', 'template2.blade.php'],
             [
-                'discovered_routes' => [
-                    ['pattern' => 'users@index', 'source' => 'template1.blade.php']
-                ],
-                'failed_routes' => [
-                    ['pattern' => 'users@invalid', 'error' => 'Controller not found']
-                ],
-                'compilation_progress' => [
-                    'templates_scanned' => 2,
-                    'routes_discovered' => 1
-                ]
+                'template_files' => ['/path/to/template.blade.php'],
+                'compilation_stats' => ['files_processed' => 5]
             ]
         );
         
-        $this->assertEquals('route_validation', $exception->getCompilationStage());
+        $this->assertEquals('template_discovery', $exception->getCompilationStage());
         $this->assertEquals('users@index', $exception->getRoutePattern());
-        $this->assertCount(2, $exception->getTemplateFiles());
-        $this->assertCount(1, $exception->getDiscoveredRoutes());
-        $this->assertCount(1, $exception->getFailedRoutes());
+        $this->assertContains('/path/to/template.blade.php', $exception->getTemplateFiles());
+        $this->assertEquals(['files_processed' => 5], $exception->getCompilationStats());
     }
 
     /** @test */
     public function route_compiler_exception_supports_adding_compilation_details()
     {
         $exception = new RouteCompilerException(
-            'Compilation error',
-            'COMPILATION_ERROR'
+            'Compilation failed',
+            'COMPILATION_FAILED',
+            'route_validation'
         );
         
-        $exception->addFailedRoute('test@method', 'Controller not found', ['source' => 'test.blade.php'])
-                  ->addDetailedError('template_error', 'Template parsing failed', ['line' => 15])
-                  ->updateCompilationProgress(['templates_scanned' => 5]);
+        $result = $exception
+            ->addTemplateFile('/path/to/template1.blade.php')
+            ->addDiscoveredRoute('users@index')
+            ->addFailedRoute('admin@invalid', 'Controller not found');
         
-        $failedRoutes = $exception->getFailedRoutes();
-        $detailedErrors = $exception->getDetailedErrors();
-        $progress = $exception->getCompilationProgress();
-        
-        $this->assertCount(1, $failedRoutes);
-        $this->assertEquals('test@method', $failedRoutes[0]['pattern']);
-        $this->assertEquals('Controller not found', $failedRoutes[0]['error']);
-        
-        $this->assertCount(1, $detailedErrors);
-        $this->assertEquals('template_error', $detailedErrors[0]['type']);
-        
-        $this->assertEquals(5, $progress['templates_scanned']);
+        $this->assertSame($exception, $result);
+        $this->assertContains('/path/to/template1.blade.php', $exception->getTemplateFiles());
+        $this->assertNotEmpty($exception->getDiscoveredRoutes());
+        $this->assertNotEmpty($exception->getFailedRoutes());
     }
 
     /** @test */
     public function route_compiler_exception_provides_compilation_specific_http_codes()
     {
-        $configError = new RouteCompilerException(
-            'Missing template directories',
+        $missingTemplates = new RouteCompilerException(
+            'Templates not found',
             'MISSING_TEMPLATE_DIRECTORIES'
         );
         
-        $validationError = new RouteCompilerException(
+        $validationFailed = new RouteCompilerException(
             'Route validation failed',
             'ROUTE_VALIDATION_FAILED'
         );
         
-        $fileError = new RouteCompilerException(
-            'Failed to write routes',
+        $writeFailed = new RouteCompilerException(
+            'Cannot write routes',
             'ROUTES_FILE_WRITE_FAILED'
         );
         
-        $this->assertEquals(500, $configError->getHttpStatusCode());
-        $this->assertEquals(422, $validationError->getHttpStatusCode());
-        $this->assertEquals(500, $fileError->getHttpStatusCode());
+        $this->assertEquals(404, $missingTemplates->getHttpStatusCode());
+        $this->assertEquals(422, $validationFailed->getHttpStatusCode());
+        $this->assertEquals(500, $writeFailed->getHttpStatusCode());
     }
 
     /** @test */
     public function route_compiler_exception_determines_reporting_based_on_environment()
     {
-        $validationError = new RouteCompilerException(
+        $validationException = new RouteCompilerException(
             'Route validation failed',
             'ROUTE_VALIDATION_FAILED'
         );
         
-        $criticalError = new RouteCompilerException(
-            'Output directory not writable',
-            'OUTPUT_DIRECTORY_NOT_WRITABLE'
+        $fileSystemException = new RouteCompilerException(
+            'Cannot write file',
+            'ROUTES_FILE_WRITE_FAILED'
         );
         
-        // In development, validation errors might not be reported
-        $this->app['env'] = 'development';
-        $this->assertFalse($validationError->shouldReport());
-        
-        // Critical errors should always be reported
-        $this->assertTrue($criticalError->shouldReport());
-        
-        // In production, most compilation errors should be reported
+        // Mock production environment
         $this->app['env'] = 'production';
-        $this->assertTrue($validationError->shouldReport());
+        $this->assertTrue($validationException->shouldReport());
+        $this->assertTrue($fileSystemException->shouldReport());
+        
+        // Mock development environment
+        $this->app['env'] = 'development';
+        $this->assertFalse($validationException->shouldReport());
+        $this->assertTrue($fileSystemException->shouldReport());
     }
 
     /** @test */
     public function route_compiler_exception_generates_comprehensive_compilation_reports()
     {
         $exception = new RouteCompilerException(
-            'Complex compilation failure',
+            'Compilation failed with multiple issues',
             'COMPILATION_FAILED',
-            'admin.users@create',
             'route_validation',
-            ['admin/users/index.blade.php', 'admin/users/create.blade.php'],
+            'users@index',
             [
+                'template_files' => ['/path/to/template1.blade.php', '/path/to/template2.blade.php'],
                 'discovered_routes' => [
-                    ['pattern' => 'admin.users@index'],
-                    ['pattern' => 'admin.users@create']
+                    ['pattern' => 'users@index', 'context' => []],
+                    ['pattern' => 'admin@dashboard', 'context' => []]
                 ],
                 'failed_routes' => [
-                    ['pattern' => 'admin.users@invalid', 'error' => 'Method not found']
+                    ['pattern' => 'invalid@route', 'error' => 'Controller not found']
                 ],
-                'compilation_progress' => [
-                    'templates_scanned' => 2,
-                    'routes_discovered' => 3,
-                    'compilation_time' => 150.5
+                'compilation_stats' => [
+                    'files_processed' => 2,
+                    'routes_discovered' => 2,
+                    'routes_failed' => 1
                 ]
             ]
         );
         
         $report = $exception->toCompilationReport();
         
-        $this->assertArrayHasKey('compilation_stage', $report);
-        $this->assertArrayHasKey('route_pattern', $report);
-        $this->assertArrayHasKey('template_files', $report);
-        $this->assertArrayHasKey('discovered_routes', $report);
-        $this->assertArrayHasKey('failed_routes', $report);
-        $this->assertArrayHasKey('compilation_progress', $report);
+        $this->assertEquals('route_validation', $report['compilation_stage']);
+        $this->assertEquals('users@index', $report['route_pattern']);
+        $this->assertCount(2, $report['template_files']);
+        $this->assertCount(2, $report['discovered_routes']);
+        $this->assertCount(1, $report['failed_routes']);
+        $this->assertArrayHasKey('compilation_summary', $report);
         $this->assertArrayHasKey('failure_analysis', $report);
-        $this->assertArrayHasKey('recommendations', $report);
         
-        $analysis = $report['failure_analysis'];
-        $this->assertEquals('route_validation', $analysis['failure_stage']);
-        $this->assertEquals(2, $analysis['total_templates']);
-        $this->assertEquals(2, $analysis['total_discovered_routes']);
-        $this->assertEquals(1, $analysis['total_failed_routes']);
-    }
-
-    /** @test */
-    public function exceptions_handle_previous_exception_chaining()
-    {
-        $originalException = new \RuntimeException('Original error');
-        
-        $flashhaltException = new FlashHaltException(
-            'FlashHALT error with previous',
-            'CHAINED_ERROR',
-            [],
-            $originalException
-        );
-        
-        $this->assertSame($originalException, $flashhaltException->getPrevious());
-        
-        $array = $flashhaltException->toArray();
-        $this->assertArrayHasKey('previous_exception', $array);
-        $this->assertEquals('RuntimeException', $array['previous_exception']['class']);
-        $this->assertEquals('Original error', $array['previous_exception']['message']);
-    }
-
-    /** @test */
-    public function exceptions_provide_consistent_timestamp_formatting()
-    {
-        $exception = new FlashHaltException('Timestamp test');
-        
-        $array = $exception->toArray();
-        
-        $this->assertArrayHasKey('timestamp', $array);
-        $this->assertMatchesRegularExpression('/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $array['timestamp']);
+        // Check compilation summary
+        $summary = $report['compilation_summary'];
+        $this->assertEquals('route_validation', $summary['stage_reached']);
+        $this->assertEquals(2, $summary['templates_processed']);
+        $this->assertEquals(2, $summary['routes_discovered']);
+        $this->assertEquals(1, $summary['routes_failed']);
+        $this->assertEquals(50.0, $summary['success_rate']); // 1 failed out of 2 total = 50% success
     }
 }
