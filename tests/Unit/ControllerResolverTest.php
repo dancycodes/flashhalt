@@ -286,8 +286,8 @@ class ControllerResolverTest extends TestCase
             $this->resolver->resolveController('missing@method', 'GET');
             $this->fail('Expected ControllerResolutionException');
         } catch (ControllerResolutionException $e) {
-            $this->assertStringContains('Tried these class names:', $e->getMessage());
-            $this->assertStringContains('App\\Http\\Controllers\\MissingController', $e->getMessage());
+            $this->assertStringContainsString('Tried these class names:', $e->getMessage());
+            $this->assertStringContainsString('App\\Http\\Controllers\\MissingController', $e->getMessage());
         }
     }
 

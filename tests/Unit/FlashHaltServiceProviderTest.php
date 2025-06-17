@@ -507,9 +507,9 @@ class FlashHaltServiceProviderTest extends TestCase
             $this->provider->boot();
             $this->fail('Expected exception for invalid configuration');
         } catch (\RuntimeException $e) {
-            $this->assertStringContains('compiled routes are missing', $e->getMessage());
-            $this->assertStringContains('php artisan flashhalt:compile', $e->getMessage());
-            $this->assertStringContains('https://flashhalt.dev/production', $e->getMessage());
+            $this->assertStringContainsString('compiled routes are missing', $e->getMessage());
+            $this->assertStringContainsString('php artisan flashhalt:compile', $e->getMessage());
+            $this->assertStringContainsString('https://flashhalt.dev/production', $e->getMessage());
         }
     }
 

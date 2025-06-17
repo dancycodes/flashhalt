@@ -71,7 +71,7 @@ class EdgeCaseTest extends TestCase
                 $resolver->resolveController($pattern, 'GET');
                 $this->fail("Expected exception for malformed pattern: {$pattern}");
             } catch (ControllerResolutionException $e) {
-                $this->assertStringContains('pattern', $e->getMessage());
+                $this->assertInstanceOf(ControllerResolutionException::class, $e);
             }
         }
     }

@@ -29,8 +29,8 @@ class JavaScriptIntegrationTest extends TestCase
         $this->assertFileExists($expectedPath);
 
         $content = File::get($expectedPath);
-        $this->assertStringContains('class FlashHALTIntegration', $content);
-        $this->assertStringContains('setupHTMXIntegration', $content);
+        $this->assertStringContainsString('class FlashHALTIntegration', $content);
+        $this->assertStringContainsString('setupHTMXIntegration', $content);
     }
 
     /** @test */
@@ -50,9 +50,9 @@ class JavaScriptIntegrationTest extends TestCase
 
         $compiled = $this->compileBladeTemplate($template);
 
-        $this->assertStringContains('<script src="/vendor/flashhalt/js/flashhalt.js">', $compiled);
-        $this->assertStringContains('FlashHALTIntegration', $compiled);
-        $this->assertStringContains('csrf_token', $compiled);
+        $this->assertStringContainsString('<script src="/vendor/flashhalt/js/flashhalt.js">', $compiled);
+        $this->assertStringContainsString('FlashHALTIntegration', $compiled);
+        $this->assertStringContainsString('csrf_token', $compiled);
     }
 
     /** @test */
@@ -76,8 +76,8 @@ class JavaScriptIntegrationTest extends TestCase
 
         $rendered = view('auto-inject-test')->render();
 
-        $this->assertStringContains('flashhalt.js', $rendered);
-        $this->assertStringContains('FlashHALTIntegration', $rendered);
+        $this->assertStringContainsString('flashhalt.js', $rendered);
+        $this->assertStringContainsString('FlashHALTIntegration', $rendered);
     }
 
     /** @test */
@@ -86,8 +86,8 @@ class JavaScriptIntegrationTest extends TestCase
         $template = '@flashhaltCsrf';
         $compiled = $this->compileBladeTemplate($template);
 
-        $this->assertStringContains('csrf_token', $compiled);
-        $this->assertStringContains(csrf_token(), $compiled);
+        $this->assertStringContainsString('csrf_token', $compiled);
+        $this->assertStringContainsString(csrf_token(), $compiled);
     }
 
     private function compileBladeTemplate(string $template): string

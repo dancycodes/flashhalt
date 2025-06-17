@@ -293,14 +293,14 @@ class RouteCompilerTest extends TestCase
         $routesContent = file_get_contents($routesPath);
         
         // Verify generated content structure
-        $this->assertStringContains('<?php', $routesContent);
-        $this->assertStringContains('FlashHALT Compiled Routes', $routesContent);
-        $this->assertStringContains('use Illuminate\\Support\\Facades\\Route;', $routesContent);
-        $this->assertStringContains('Route::prefix(\'hx\')', $routesContent);
-        $this->assertStringContains('Route::post(\'users@store\'', $routesContent);
-        $this->assertStringContains('Route::patch(\'users@update\'', $routesContent);
-        $this->assertStringContains('[App\\Http\\Controllers\\UsersController::class, \'store\']', $routesContent);
-        $this->assertStringContains('[App\\Http\\Controllers\\UsersController::class, \'update\']', $routesContent);
+        $this->assertStringContainsString('<?php', $routesContent);
+        $this->assertStringContainsString('FlashHALT Compiled Routes', $routesContent);
+        $this->assertStringContainsString('use Illuminate\\Support\\Facades\\Route;', $routesContent);
+        $this->assertStringContainsString('Route::prefix(\'hx\')', $routesContent);
+        $this->assertStringContainsString('Route::post(\'users@store\'', $routesContent);
+        $this->assertStringContainsString('Route::patch(\'users@update\'', $routesContent);
+        $this->assertStringContainsString('[App\\Http\\Controllers\\UsersController::class, \'store\']', $routesContent);
+        $this->assertStringContainsString('[App\\Http\\Controllers\\UsersController::class, \'update\']', $routesContent);
     }
 
     /** @test */
@@ -321,7 +321,7 @@ class RouteCompilerTest extends TestCase
         $routesPath = $this->app['config']->get('flashhalt.production.compiled_routes_path');
         $routesContent = file_get_contents($routesPath);
         
-        $this->assertStringContains('->name(\'flashhalt.users@index\')', $routesContent);
+        $this->assertStringContainsString('->name(\'flashhalt.users@index\')', $routesContent);
     }
 
     /** @test */
@@ -342,7 +342,7 @@ class RouteCompilerTest extends TestCase
         $routesPath = $this->app['config']->get('flashhalt.production.compiled_routes_path');
         $routesContent = file_get_contents($routesPath);
         
-        $this->assertStringContains('->middleware([\'web\'])', $routesContent);
+        $this->assertStringContainsString('->middleware([\'web\'])', $routesContent);
     }
 
     /** @test */
@@ -388,7 +388,7 @@ class RouteCompilerTest extends TestCase
         $this->assertFileExists($routesPath);
         
         $routesContent = file_get_contents($routesPath);
-        $this->assertStringContains('No FlashHALT routes were discovered', $routesContent);
+        $this->assertStringContainsString('No FlashHALT routes were discovered', $routesContent);
     }
 
     /** @test */
@@ -409,7 +409,7 @@ class RouteCompilerTest extends TestCase
         // File should be completely replaced with new content
         $routesContent = file_get_contents($routesPath);
         $this->assertStringNotContains('existing content', $routesContent);
-        $this->assertStringContains('FlashHALT Compiled Routes', $routesContent);
+        $this->assertStringContainsString('FlashHALT Compiled Routes', $routesContent);
         
         // Verify no temporary files are left behind
         $this->assertFileDoesNotExist($routesPath . '.tmp');

@@ -4,6 +4,8 @@ namespace DancyCodes\FlashHalt\Tests;
 
 use DancyCodes\FlashHalt\FlashHaltServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
@@ -26,6 +28,9 @@ class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Set up session for tests that need CSRF
+        $this->startSession();
 
         // Set up default configuration that works for most tests
         $this->setUpDefaultConfiguration();
@@ -230,18 +235,41 @@ class TestCase extends Orchestra
     /**
      * Create an HTTP request for testing FlashHALT routes.
      * This helper simplifies creating requests that match FlashHALT's
-     * expected route pattern.
+     * expected route pattern without complex route binding.
      */
     protected function createFlashHaltRequest(string $pattern, string $method = 'GET', array $data = []): \Illuminate\Http\Request
     {
-        return $this->app['request']->create(
-            "/hx/{$pattern}",
-            $method,
-            $data,
-            [],
-            [],
-            ['HTTP_HX_REQUEST' => 'true'] // Mark as HTMX request
-        );
+        $uri = "/hx/{$pattern}";
+        $request = Request::create($uri, $method, $data);
+        $request->headers->set('HX-Request', 'true');
+        
+        // Create a simple route mock that provides the pattern
+        $route = new class($pattern) {
+            private $pattern;
+            
+            public function __construct($pattern) {
+                $this->pattern = $pattern;
+            }
+            
+            public function hasParameter($key) {
+                return $key === 'route';
+            }
+            
+            public function parameter($key, $default = null) {
+                return $key === 'route' ? $this->pattern : $default;
+            }
+            
+            public function parameters() {
+                return ['route' => $this->pattern];
+            }
+        };
+        
+        // Set the route resolver to return our mock
+        $request->setRouteResolver(function () use ($route) {
+            return $route;
+        });
+        
+        return $request;
     }
 
     /**

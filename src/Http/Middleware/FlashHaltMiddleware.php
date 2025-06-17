@@ -91,10 +91,16 @@ class FlashHaltMiddleware
         $this->startPerformanceTimer('total_processing');
 
         try {
-            // Step 1: Determine if this request should be handled by FlashHALT
-            if (!$this->shouldProcessRequest($request)) {
-                // This request doesn't match FlashHALT patterns, pass it to the next middleware
+            // Step a: Check if this looks like a FlashHALT request
+            if (!$request->is('hx/*')) {
+                // Not a FlashHALT request at all, pass it through
                 return $next($request);
+            }
+
+            // Step 1: This is a FlashHALT request, validate it properly
+            if (!$this->shouldProcessRequest($request)) {
+                // This is a malformed FlashHALT request, reject it explicitly
+                return $this->handleInvalidFlashHaltRequest($request);
             }
 
             // Step 2: Extract and validate the route pattern from the request
@@ -140,6 +146,51 @@ class FlashHaltMiddleware
         }
     }
 
+
+    /**
+     * Handle invalid FlashHALT requests with appropriate error responses.
+     * 
+     * This method handles requests that match the FlashHALT URL pattern
+     * but have invalid or malformed route patterns.
+     *
+     * @param Request $request The invalid request
+     * @return BaseResponse An appropriate error response
+     */
+    protected function handleInvalidFlashHaltRequest(Request $request): BaseResponse
+{
+    try {
+        if ($this->isDebugMode()) {
+            // In development, provide helpful error information
+            $route = $request->route();
+            $pattern = 'unknown';
+            
+            try {
+                $pattern = $route ? $route->parameter('route', 'unknown') : 'unknown';
+            } catch (\Exception $e) {
+                // Ignore route access errors
+            }
+            
+            $exception = new ControllerResolutionException(
+                "Invalid route pattern: '{$pattern}'. FlashHALT routes must follow the pattern 'controller@method' or 'namespace.controller@method'.",
+                'INVALID_ROUTE_PATTERN'
+            );
+            
+            return new Response(
+                $this->formatDevelopmentError('Invalid FlashHALT Route Pattern', $exception),
+                404,
+                ['Content-Type' => 'text/html']
+            );
+        } else {
+            // In production, provide minimal error information
+            return new Response('Not Found', 404);
+        }
+    } catch (\Exception $e) {
+        // Fallback in case anything goes wrong
+        return new Response('Not Found', 404);
+    }
+}
+
+
     /**
      * Determine if this request should be processed by FlashHALT.
      * 
@@ -153,29 +204,35 @@ class FlashHaltMiddleware
      */
     protected function shouldProcessRequest(Request $request): bool
     {
-        // Only process requests that match our route prefix pattern
-        if (!$request->is('hx/*')) {
-            return false;
-        }
-
+        // At this point we know it's an hx/* request
+        
         // Extract the route parameter that contains our pattern
         $route = $request->route();
-        if (!$route || !$route->hasParameter('route')) {
+        if (!$route) {
             return false;
         }
-
-        $routePattern = $route->parameter('route');
-
+    
+        // Handle cases where route parameters aren't available (e.g., in tests)
+        try {
+            if (!$route->hasParameter('route')) {
+                return false;
+            }
+            $routePattern = $route->parameter('route');
+        } catch (\Exception $e) {
+            // Route not properly bound, reject this request
+            return false;
+        }
+        
         // Verify the pattern contains our required @ separator
         if (!is_string($routePattern) || !str_contains($routePattern, '@')) {
             return false;
         }
-
+    
         // Additional validation for malformed or suspicious patterns
         if (strlen($routePattern) > 200 || !preg_match('/^[a-zA-Z0-9_\.\-@]+$/', $routePattern)) {
             return false;
         }
-
+    
         return true;
     }
 
@@ -191,19 +248,34 @@ class FlashHaltMiddleware
      * @throws ControllerResolutionException If pattern extraction fails
      */
     protected function extractRoutePattern(Request $request): string
-    {
-        $route = $request->route();
-        $routePattern = $route->parameter('route');
-
-        if (!is_string($routePattern) || empty(trim($routePattern))) {
-            throw new ControllerResolutionException(
-                'Invalid route pattern: pattern must be a non-empty string',
-                'INVALID_ROUTE_PATTERN'
-            );
-        }
-
-        return trim($routePattern);
+{
+    $route = $request->route();
+    
+    if (!$route) {
+        throw new ControllerResolutionException(
+            'Route not available: request must have a bound route',
+            'ROUTE_NOT_BOUND'
+        );
     }
+
+    try {
+        $routePattern = $route->parameter('route');
+    } catch (\Exception $e) {
+        throw new ControllerResolutionException(
+            'Failed to extract route pattern: ' . $e->getMessage(),
+            'ROUTE_PARAMETER_ERROR'
+        );
+    }
+
+    if (!is_string($routePattern) || empty(trim($routePattern))) {
+        throw new ControllerResolutionException(
+            'Invalid route pattern: pattern must be a non-empty string',
+            'INVALID_ROUTE_PATTERN'
+        );
+    }
+
+    return trim($routePattern);
+}
 
     /**
      * Execute a resolved controller method with proper parameter binding.
@@ -652,4 +724,5 @@ class FlashHaltMiddleware
             'metrics' => $this->performanceMetrics,
         ]);
     }
+
 }

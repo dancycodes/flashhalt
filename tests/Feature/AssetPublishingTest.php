@@ -25,8 +25,8 @@ class AssetPublishingTest extends TestCase
         $this->assertFileExists($expectedPath);
 
         $content = File::get($expectedPath);
-        $this->assertStringContains('FlashHALTIntegration', $content);
-        $this->assertStringContains('class FlashHALT', $content);
+        $this->assertStringContainsString('FlashHALTIntegration', $content);
+        $this->assertStringContainsString('class FlashHALT', $content);
     }
 
     /** @test */

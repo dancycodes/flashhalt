@@ -124,10 +124,10 @@ class ExceptionTest extends TestCase
         
         $devString = $exception->toDevelopmentString();
         
-        $this->assertStringContainsString('Test error message', $devString);
-        $this->assertStringContainsString('TEST_CODE', $devString);
-        $this->assertStringContainsString('debug_info: helpful information', $devString);
-        $this->assertStringContainsString('Try this fix', $devString);
+        $this->assertStringContainsStringString('Test error message', $devString);
+        $this->assertStringContainsStringString('TEST_CODE', $devString);
+        $this->assertStringContainsStringString('debug_info: helpful information', $devString);
+        $this->assertStringContainsStringString('Try this fix', $devString);
     }
 
     /** @test */
@@ -143,7 +143,7 @@ class ExceptionTest extends TestCase
         
         $this->assertStringNotContainsString('sensitive_data', $prodString);
         $this->assertStringNotContainsString('should not be exposed', $prodString);
-        $this->assertStringContainsString('Please try again', $prodString);
+        $this->assertStringContainsStringString('Please try again', $prodString);
     }
 
     /** @test */
@@ -418,8 +418,8 @@ class ExceptionTest extends TestCase
         
         $devString = $exception->toDevelopmentString();
         
-        $this->assertStringContainsString('safe_value: this is safe', $devString);
-        $this->assertStringContainsString('[REDACTED FOR SECURITY]', $devString);
+        $this->assertStringContainsStringString('safe_value: this is safe', $devString);
+        $this->assertStringContainsStringString('[REDACTED FOR SECURITY]', $devString);
         $this->assertStringNotContainsString('secret123', $devString);
         $this->assertStringNotContainsString('sk_live_12345', $devString);
     }

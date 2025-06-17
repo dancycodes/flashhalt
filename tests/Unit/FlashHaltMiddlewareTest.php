@@ -10,6 +10,8 @@ use DancyCodes\FlashHalt\Tests\TestCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Route;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Cache\Repository;
 use Mockery;
 
 /**
@@ -39,18 +41,21 @@ class FlashHaltMiddlewareTest extends TestCase
      * the complex controller resolution logic.
      */
     protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Mock the ControllerResolver to control its behavior in tests
-        $this->controllerResolver = Mockery::mock(ControllerResolver::class);
-        
-        // Create the middleware instance with mocked dependencies
-        $this->middleware = new FlashHaltMiddleware($this->controllerResolver);
-        
-        // Bind the mock to the service container so it gets injected
-        $this->app->instance(ControllerResolver::class, $this->controllerResolver);
-    }
+{
+    parent::setUp();
+    
+    // Set up session for CSRF tests
+    $this->startSession();
+    
+    // Create a fresh cache instance for each test
+    $this->cache = new Repository(new ArrayStore());
+    
+    // Mock the ControllerResolver to isolate middleware behavior
+    $this->controllerResolver = Mockery::mock(ControllerResolver::class);
+    
+    // Create the FlashHaltMiddleware instance
+    $this->middleware = new FlashHaltMiddleware($this->controllerResolver);
+}
 
     /** @test */
     public function it_passes_non_flashhalt_requests_to_next_middleware()
@@ -77,11 +82,11 @@ class FlashHaltMiddlewareTest extends TestCase
         
         // Create a FlashHALT request
         $request = $this->createFlashHaltRequest('test@index', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@index');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         // Mock successful controller resolution
         $this->controllerResolver->shouldReceive('resolveController')
@@ -139,11 +144,11 @@ class FlashHaltMiddlewareTest extends TestCase
     public function it_handles_controller_resolution_exceptions_in_development()
     {
         $request = $this->createFlashHaltRequest('nonexistent@method', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'nonexistent@method');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'nonexistent@method');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         // Configure for development mode to get detailed errors
         $this->withFlashHaltConfig([
@@ -165,8 +170,8 @@ class FlashHaltMiddlewareTest extends TestCase
         $response = $this->middleware->handle($request, $next);
         
         $this->assertEquals(404, $response->getStatusCode());
-        $this->assertStringContains('Controller Resolution Failed', $response->getContent());
-        $this->assertStringContains('Controller not found', $response->getContent());
+        $this->assertStringContainsString('Controller Resolution Failed', $response->getContent());
+        $this->assertStringContainsString('Controller not found', $response->getContent());
         $this->assertEquals('text/html', $response->headers->get('Content-Type'));
     }
 
@@ -174,11 +179,11 @@ class FlashHaltMiddlewareTest extends TestCase
     public function it_handles_security_validation_exceptions_in_development()
     {
         $request = $this->createFlashHaltRequest('test@dangerous', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@dangerous');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@dangerous');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->withFlashHaltConfig([
             'development' => ['debug_mode' => true]
@@ -198,19 +203,19 @@ class FlashHaltMiddlewareTest extends TestCase
         $response = $this->middleware->handle($request, $next);
         
         $this->assertEquals(403, $response->getStatusCode());
-        $this->assertStringContains('Security Validation Failed', $response->getContent());
-        $this->assertStringContains('Method is blacklisted', $response->getContent());
+        $this->assertStringContainsString('Security Validation Failed', $response->getContent());
+        $this->assertStringContainsString('Method is blacklisted', $response->getContent());
     }
 
     /** @test */
     public function it_provides_minimal_error_information_in_production()
     {
         $request = $this->createFlashHaltRequest('test@dangerous', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@dangerous');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@dangerous');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         // Configure for production mode
         $this->withFlashHaltConfig([
@@ -239,11 +244,11 @@ class FlashHaltMiddlewareTest extends TestCase
     public function it_handles_unexpected_exceptions_gracefully()
     {
         $request = $this->createFlashHaltRequest('test@method', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@method');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@method');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->withFlashHaltConfig([
             'development' => ['debug_mode' => true]
@@ -260,8 +265,8 @@ class FlashHaltMiddlewareTest extends TestCase
         $response = $this->middleware->handle($request, $next);
         
         $this->assertEquals(500, $response->getStatusCode());
-        $this->assertStringContains('Unexpected Error', $response->getContent());
-        $this->assertStringContains('Unexpected error occurred', $response->getContent());
+        $this->assertStringContainsString('Unexpected Error', $response->getContent());
+        $this->assertStringContainsString('Unexpected error occurred', $response->getContent());
     }
 
     /** @test */
@@ -272,11 +277,11 @@ class FlashHaltMiddlewareTest extends TestCase
         $request = $this->createFlashHaltRequest('test@index', 'GET');
         $request->headers->set('HX-Request', 'true'); // Mark as HTMX request
         
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@index');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->controllerResolver->shouldReceive('resolveController')
             ->with('test@index', 'GET')
@@ -305,11 +310,11 @@ class FlashHaltMiddlewareTest extends TestCase
         $this->createTestController('Test', ['index' => 'response']);
         
         $request = $this->createFlashHaltRequest('test@index', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'test@index');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->withFlashHaltConfig([
             'development' => ['debug_mode' => true],
@@ -360,11 +365,11 @@ class FlashHaltMiddlewareTest extends TestCase
         file_put_contents($viewsPath . '/test-view.blade.php', '<div>{{ $message }}</div>');
         
         $request = $this->createFlashHaltRequest('view-test@index', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'view-test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'view-test@index');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->controllerResolver->shouldReceive('resolveController')
             ->with('view-test@index', 'GET')
@@ -382,7 +387,7 @@ class FlashHaltMiddlewareTest extends TestCase
         $response = $this->middleware->handle($request, $next);
         
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertStringContains('Hello from view', $response->getContent());
+        $this->assertStringContainsString('Hello from view', $response->getContent());
     }
 
     /** @test */
@@ -400,11 +405,11 @@ class FlashHaltMiddlewareTest extends TestCase
         ');
         
         $request = $this->createFlashHaltRequest('json-test@index', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'json-test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // $route->setParameter('route', 'json-test@index');
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $this->controllerResolver->shouldReceive('resolveController')
             ->with('json-test@index', 'GET')
@@ -430,44 +435,44 @@ class FlashHaltMiddlewareTest extends TestCase
     }
 
     /** @test */
-    public function it_handles_redirect_responses_correctly()
-    {
-        eval('
-            namespace App\\Http\\Controllers;
-            use Illuminate\\Routing\\Controller;
-            
-            class RedirectTestController extends Controller {
-                public function index() {
-                    return redirect("/dashboard");
-                }
+public function it_handles_redirect_responses_correctly()
+{
+    eval('
+        namespace App\\Http\\Controllers;
+        use Illuminate\\Routing\\Controller;
+        
+        class RedirectTestController extends Controller {
+            public function index() {
+                return redirect("/dashboard");
             }
-        ');
-        
-        $request = $this->createFlashHaltRequest('redirect-test@index', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        $route->setParameter('route', 'redirect-test@index');
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
-        
-        $this->controllerResolver->shouldReceive('resolveController')
-            ->with('redirect-test@index', 'GET')
-            ->andReturn([
-                'controller' => new \App\Http\Controllers\RedirectTestController(),
-                'method' => 'index',
-                'class' => 'App\\Http\\Controllers\\RedirectTestController',
-                'pattern' => 'redirect-test@index',
-            ]);
-        
-        $next = function () {
-            return new Response('should not be called');
-        };
-        
+        }
+    ');
+    
+    $request = $this->createFlashHaltRequest('redirect-test@index', 'GET');
+    
+    $this->controllerResolver->shouldReceive('resolveController')
+        ->with('redirect-test@index', 'GET')
+        ->andReturn([
+            'controller' => new \App\Http\Controllers\RedirectTestController(),
+            'method' => 'index',
+            'class' => 'App\\Http\\Controllers\\RedirectTestController',
+            'pattern' => 'redirect-test@index',
+        ]);
+    
+    $next = function () {
+        return new Response('should not be called');
+    };
+    
+    try {
         $response = $this->middleware->handle($request, $next);
         
         $this->assertEquals(302, $response->getStatusCode());
         $this->assertEquals('/dashboard', $response->headers->get('Location'));
+    } catch (\Exception $e) {
+        // Temporary debug - remove after we identify the issue
+        $this->fail("Exception thrown: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
     }
+}
 
     /** @test */
     public function it_rejects_invalid_route_patterns()
@@ -482,11 +487,11 @@ class FlashHaltMiddlewareTest extends TestCase
         
         foreach ($invalidPatterns as $pattern) {
             $request = $this->createFlashHaltRequest($pattern, 'GET');
-            $route = new Route(['GET'], 'hx/{route}', []);
-            $route->setParameter('route', $pattern);
-            $request->setRouteResolver(function () use ($route) {
-                return $route;
-            });
+            // $route = new Route(['GET'], 'hx/{route}', []);
+            // $route->setParameter('route', $pattern);
+            // $request->setRouteResolver(function () use ($route) {
+            //     return $route;
+            // });
             
             $next = function () {
                 return new Response('should not be called');
@@ -502,11 +507,11 @@ class FlashHaltMiddlewareTest extends TestCase
     public function it_handles_requests_without_route_parameters()
     {
         $request = Request::create('/hx/invalid', 'GET');
-        $route = new Route(['GET'], 'hx/{route}', []);
-        // Don't set route parameter to simulate missing parameter
-        $request->setRouteResolver(function () use ($route) {
-            return $route;
-        });
+        // $route = new Route(['GET'], 'hx/{route}', []);
+        // // Don't set route parameter to simulate missing parameter
+        // $request->setRouteResolver(function () use ($route) {
+        //     return $route;
+        // });
         
         $next = function () {
             return new Response('next middleware');
@@ -521,6 +526,10 @@ class FlashHaltMiddlewareTest extends TestCase
     /** @test */
     public function it_adds_csrf_token_header_for_non_get_requests()
     {
+        // Set up session for CSRF token
+        $this->app['config']->set('session.driver', 'array');
+        $this->startSession();
+
         $this->createTestController('Test', ['store' => 'created']);
         
         $request = $this->createFlashHaltRequest('test@store', 'POST');

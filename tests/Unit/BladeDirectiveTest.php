@@ -18,32 +18,37 @@ class BladeDirectiveTest extends TestCase
     {
         $compiled = Blade::compileString('@flashhaltScripts');
         
-        $this->assertStringContains('flashhalt.js', $compiled);
-        $this->assertStringContains('<script', $compiled);
+        // The directive compiles to PHP code that echoes a variable
+        $this->assertStringContainsString('$flashhaltScripts', $compiled);
+        $this->assertStringContainsString('echo', $compiled);
+        $this->assertStringContainsString('isset', $compiled);
     }
 
     /** @test */
-    public function flashhalt_enabled_directive_creates_conditional_wrapper()
-    {
-        $template = '
-            @flashhaltEnabled
-                <div>This content is FlashHALT enabled</div>
-            @endflashhalt
-        ';
-        
-        $compiled = Blade::compileString($template);
-        
-        $this->assertStringContains('flashhalt', $compiled);
-        $this->assertStringContains('This content is FlashHALT enabled', $compiled);
-    }
+public function flashhalt_enabled_directive_creates_conditional_wrapper()
+{
+    $template = '
+        @flashhaltEnabled
+            <div>This content is FlashHALT enabled</div>
+        @endflashhalt
+    ';
+    
+    $compiled = Blade::compileString($template);
+    
+    // Check for the actual method name (with correct casing)
+    $this->assertStringContainsString('FlashHALT', $compiled);
+    $this->assertStringContainsString('This content is FlashHALT enabled', $compiled);
+    $this->assertStringContainsString('if(', $compiled);
+    $this->assertStringContainsString('endif', $compiled);
+}
 
     /** @test */
     public function flashhalt_csrf_directive_includes_token()
     {
         $compiled = Blade::compileString('@flashhaltCsrf');
         
-        $this->assertStringContains('csrf_token', $compiled);
-        $this->assertStringContains('meta', $compiled);
+        $this->assertStringContainsString('csrf_token', $compiled);
+        $this->assertStringContainsString('meta', $compiled);
     }
 
     /** @test */
@@ -58,6 +63,6 @@ class BladeDirectiveTest extends TestCase
         $compiled = Blade::compileString('@flashhaltScripts');
         
         // When disabled, should not include scripts
-        $this->assertStringNotContains('flashhalt.js', $compiled);
+        $this->assertStringNotContainsString('flashhalt.js', $compiled);
     }
 }

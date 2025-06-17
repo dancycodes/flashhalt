@@ -84,7 +84,7 @@ class SecurityValidatorTest extends TestCase
                 $this->validator->validateControllerMethod('App\\Http\\Controllers\\TestController', $methodName, 'GET');
                 $this->fail("Expected SecurityValidationException for method name: {$methodName}");
             } catch (SecurityValidationException $e) {
-                $this->assertStringContains('invalid characters', $e->getMessage());
+                $this->assertStringContainsString('invalid characters', $e->getMessage());
             }
         }
     }
@@ -515,7 +515,7 @@ class SecurityValidatorTest extends TestCase
             );
             $this->fail('Expected SecurityValidationException for password method');
         } catch (SecurityValidationException $e) {
-            $this->assertStringContains('matches a blocked pattern', $e->getMessage());
+            $this->assertStringContainsString('matches a blocked pattern', $e->getMessage());
         }
         
         // Now create a new validator with different configuration

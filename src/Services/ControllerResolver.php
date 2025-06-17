@@ -377,31 +377,37 @@ class ControllerResolver
     }
 
     /**
-     * Generate fallback class names for edge cases and custom patterns.
-     * 
-     * This method demonstrates how to handle edge cases gracefully by providing
-     * additional resolution strategies when standard patterns don't work.
-     *
-     * @param string $controllerPath The controller path to generate fallbacks for
-     * @return array Array of fallback class name candidates
-     */
-    protected function generateFallbackClassNames(string $controllerPath): array
-    {
-        $fallbacks = [];
-        
-        // Try the path as-is with base namespace (for exact class name matches)
-        $fallbacks[] = 'App\\Http\\Controllers\\' . str_replace('.', '\\', $controllerPath);
-        
-        // Try with Controller suffix added to the final segment
-        $pathWithSuffix = preg_replace('/([^.]+)$/', '$1Controller', $controllerPath);
-        $fallbacks[] = 'App\\Http\\Controllers\\' . str_replace('.', '\\', $pathWithSuffix);
-        
-        // Try common alternative patterns that some applications use
-        $fallbacks[] = 'App\\Controllers\\' . str_replace('.', '\\', $controllerPath) . 'Controller';
-        $fallbacks[] = 'App\\' . str_replace('.', '\\', $controllerPath) . 'Controller';
-
-        return array_unique($fallbacks);
+ * Generate fallback class names for edge cases and custom patterns.
+ * 
+ * This method demonstrates how to handle edge cases gracefully by providing
+ * additional resolution strategies when standard patterns don't work.
+ *
+ * @param string $controllerPath The controller path to generate fallbacks for
+ * @return array Array of fallback class name candidates
+ */
+protected function generateFallbackClassNames(string $controllerPath): array
+{
+    $fallbacks = [];
+    
+    // Convert path segments to proper case for fallback attempts
+    $pathSegments = explode('.', $controllerPath);
+    $convertedSegments = array_map(function ($segment) {
+        return Str::studly(str_replace(['-', '_'], ' ', $segment));
+    }, $pathSegments);
+    
+    // Try the path with proper case conversion
+    $fallbacks[] = 'App\\Http\\Controllers\\' . implode('\\', $convertedSegments);
+    
+    // Try with Controller suffix added to the final segment if it doesn't already end with Controller
+    $lastSegment = end($convertedSegments);
+    if (!str_ends_with($lastSegment, 'Controller')) {
+        $segmentsWithSuffix = $convertedSegments;
+        $segmentsWithSuffix[count($segmentsWithSuffix) - 1] = $lastSegment . 'Controller';
+        $fallbacks[] = 'App\\Http\\Controllers\\' . implode('\\', $segmentsWithSuffix);
     }
+    
+    return array_unique($fallbacks);
+}
 
     /**
      * Validate that a controller class is appropriate for FlashHALT usage.
@@ -528,42 +534,57 @@ class ControllerResolver
         }
     }
 
-    /**
-     * Check if a controller class matches an allowed pattern.
-     * 
-     * This method provides flexible pattern matching for controller whitelisting,
-     * supporting exact matches, simple class names, and namespace patterns.
-     *
-     * @param string $controllerClass Full controller class name
-     * @param string $pattern Pattern to match against
-     * @return bool True if the controller matches the pattern
-     */
-    protected function matchesControllerPattern(string $controllerClass, string $pattern): bool
-    {
-        // Exact class name match
-        if ($controllerClass === $pattern) {
-            return true;
-        }
-
-        // Simple class name match
-        if (class_basename($controllerClass) === $pattern) {
-            return true;
-        }
-
-        // Simple class name without "Controller" suffix
-        $simpleClassName = str_replace('Controller', '', class_basename($controllerClass));
-        if ($simpleClassName === $pattern) {
-            return true;
-        }
-
-        // Namespace pattern match (using wildcards)
-        if (str_contains($pattern, '*')) {
-            $regexPattern = str_replace('*', '.*', preg_quote($pattern, '/'));
-            return preg_match("/^{$regexPattern}$/", $controllerClass);
-        }
-
-        return false;
+/**
+ * Check if a controller class matches an allowed pattern.
+ * 
+ * This method provides flexible pattern matching for controller whitelisting,
+ * supporting exact matches, simple class names, and namespace patterns.
+ *
+ * @param string $controllerClass Full controller class name
+ * @param string $pattern Pattern to match against
+ * @return bool True if the controller matches the pattern
+ */
+protected function matchesControllerPattern(string $controllerClass, string $pattern): bool
+{
+    // Exact class name match
+    if ($controllerClass === $pattern) {
+        return true;
     }
+
+    // Simple class name match
+    if (class_basename($controllerClass) === $pattern) {
+        return true;
+    }
+
+    // Simple class name without "Controller" suffix
+    $simpleClassName = str_replace('Controller', '', class_basename($controllerClass));
+    if ($simpleClassName === $pattern) {
+        return true;
+    }
+
+    // Namespace pattern match (using wildcards)
+    if (str_contains($pattern, '*')) {
+        $regexPattern = str_replace('*', '.*', preg_quote($pattern, '/'));
+        
+        // Try matching against full class name
+        if (preg_match("/^{$regexPattern}$/", $controllerClass)) {
+            return true;
+        }
+        
+        // Try matching against simple class name
+        if (preg_match("/^{$regexPattern}$/", class_basename($controllerClass))) {
+            return true;
+        }
+        
+        // Try matching against simple class name without "Controller" suffix
+        $simpleClassName = str_replace('Controller', '', class_basename($controllerClass));
+        if (preg_match("/^{$regexPattern}$/", $simpleClassName)) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
     /**
      * Validate that a controller method is safe and appropriate for FlashHALT access.
