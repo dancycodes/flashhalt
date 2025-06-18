@@ -310,37 +310,37 @@ class ControllerResolverTest extends TestCase
     }
 
     /** @test */
-    public function it_handles_controller_instantiation_through_service_container()
-    {
-        // Create a controller that requires dependency injection
-        eval('
-            namespace App\\Http\\Controllers;
-            use Illuminate\\Routing\\Controller;
-            use Illuminate\\Http\\Request;
+public function it_handles_controller_instantiation_through_service_container()
+{
+    // Create a controller that requires dependency injection
+    eval('
+        namespace App\\Http\\Controllers;
+        use Illuminate\\Routing\\Controller;
+        use Illuminate\\Http\\Request;
+        
+        class DependencyController extends Controller {
+            public $request; // Changed from private to public
             
-            class DependencyController extends Controller {
-                private $request;
-                
-                public function __construct(Request $request) {
-                    $this->request = $request;
-                }
-                
-                public function show() { 
-                    return "dependency injected"; 
-                }
+            public function __construct(Request $request) {
+                $this->request = $request;
             }
-        ');
-        
-        $this->securityValidator->shouldReceive('validateControllerMethod')
-            ->with('App\\Http\\Controllers\\DependencyController', 'show', 'GET')
-            ->andReturn(true);
-        
-        $result = $this->resolver->resolveController('dependency@show', 'GET');
-        
-        $this->assertInstanceOf('App\\Http\\Controllers\\DependencyController', $result['controller']);
-        // Verify that the controller was instantiated with proper dependency injection
-        $this->assertInstanceOf('Illuminate\\Http\\Request', $result['controller']->request ?? null);
-    }
+            
+            public function show() { 
+                return "dependency injected"; 
+            }
+        }
+    ');
+    
+    $this->securityValidator->shouldReceive('validateControllerMethod')
+        ->with('App\\Http\\Controllers\\DependencyController', 'show', 'GET')
+        ->andReturn(true);
+    
+    $result = $this->resolver->resolveController('dependency@show', 'GET');
+    
+    $this->assertInstanceOf('App\\Http\\Controllers\\DependencyController', $result['controller']);
+    // Verify that the controller was instantiated with proper dependency injection
+    $this->assertInstanceOf('Illuminate\\Http\\Request', $result['controller']->request ?? null);
+}
 
     /** @test */
     public function it_throws_exception_when_controller_instantiation_fails()

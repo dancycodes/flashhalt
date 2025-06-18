@@ -351,31 +351,68 @@ class SecurityValidator
     }
 
     /**
-     * Validate additional method characteristics for security.
-     * 
-     * This performs deeper analysis of method characteristics that might
-     * indicate security risks or inappropriate usage patterns.
-     *
-     * @param ReflectionMethod $method Method reflection to analyze
-     * @param string $controllerClass The controller class being validated
-     * @throws SecurityValidationException If characteristics are problematic
-     */
-    protected function validateMethodCharacteristics(ReflectionMethod $method, string $controllerClass): void
-    {
-        // Check if method is declared in the controller class or inherited
-        $declaringClass = $method->getDeclaringClass();
-        
-        // If method is inherited from a parent class, ensure it's safe to call
-        if ($declaringClass->getName() !== $controllerClass) {
-            $this->validateInheritedMethod($method, $declaringClass);
-        }
-
-        // Analyze method parameters for potential security issues
-        $this->validateMethodParameters($method);
-
-        // Check method documentation for security annotations
-        $this->validateMethodDocumentation($method);
+ * Validate additional method characteristics for security.
+ * 
+ * This performs deeper analysis of method characteristics that might
+ * indicate security risks or inappropriate usage patterns.
+ *
+ * @param ReflectionMethod $method Method reflection to analyze
+ * @param string $controllerClass The controller class being validated
+ * @throws SecurityValidationException If characteristics are problematic
+ */
+protected function validateMethodCharacteristics(ReflectionMethod $method, string $controllerClass): void
+{
+    // Check if the controller class itself extends dangerous base classes
+    $controllerReflection = new ReflectionClass($controllerClass);
+    $this->validateControllerInheritance($controllerReflection);
+    
+    // Check if method is declared in the controller class or inherited
+    $declaringClass = $method->getDeclaringClass();
+    
+    // If method is inherited from a parent class, ensure it's safe to call
+    if ($declaringClass->getName() !== $controllerClass) {
+        $this->validateInheritedMethod($method, $declaringClass);
     }
+
+    // Analyze method parameters for potential security issues
+    $this->validateMethodParameters($method);
+
+    // Check method documentation for security annotations
+    $this->validateMethodDocumentation($method);
+}
+
+/**
+ * Validate that the controller class doesn't extend dangerous base classes.
+ * 
+ * Controllers that extend certain system classes should not be accessible
+ * via HTTP requests as they expose dangerous functionality.
+ *
+ * @param ReflectionClass $controllerClass Controller class reflection
+ * @throws SecurityValidationException If controller extends dangerous class
+ */
+protected function validateControllerInheritance(ReflectionClass $controllerClass): void
+{
+    $dangerousBaseClasses = [
+        'ReflectionClass', 'ReflectionMethod', 'ReflectionProperty',
+        'PDO', 'PDOStatement', 'mysqli', 'SQLite3',
+        'DirectoryIterator', 'RecursiveDirectoryIterator',
+        'SplFileObject', 'SplFileInfo'
+    ];
+
+    foreach ($dangerousBaseClasses as $dangerousClass) {
+        if ($controllerClass->isSubclassOf($dangerousClass)) {
+            throw new SecurityValidationException(
+                sprintf(
+                    'Controller class "%s" extends "%s", which contains functionality ' .
+                    'that should not be accessible via HTTP requests',
+                    $controllerClass->getName(),
+                    $dangerousClass
+                ),
+                'DANGEROUS_CONTROLLER_INHERITANCE'
+            );
+        }
+    }
+}
 
     /**
      * Validate inherited methods for security concerns.
@@ -644,4 +681,30 @@ class SecurityValidator
             'config_hash' => md5(serialize($this->config)),
         ];
     }
+
+    /**
+ * Check if a namespace is allowed based on configuration.
+ * 
+ * @param string $namespace The namespace to check
+ * @return bool Whether the namespace is allowed
+ */
+public function isNamespaceAllowed(string $namespace): bool
+{
+    $allowedNamespaces = $this->config['allowed_namespaces'] ?? ['App\\Http\\Controllers\\*'];
+    
+    foreach ($allowedNamespaces as $allowedPattern) {
+        if (str_ends_with($allowedPattern, '*')) {
+            $prefix = substr($allowedPattern, 0, -1);
+            if (str_starts_with($namespace, $prefix)) {
+                return true;
+            }
+        } elseif ($namespace === $allowedPattern) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+
 }
