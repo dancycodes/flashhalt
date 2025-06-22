@@ -561,62 +561,6 @@ class FlashHaltServiceProvider extends ServiceProvider
         //         });
         //     });
 
-        // // Register the route FIRST
-        // Route::middleware('web')->any('hx/{route}', function ($route) {
-        //     [$controllerPath, $method] = explode('@', $route);
-        //     $controllerClass = $this->resolveControllerClass($controllerPath);
-        //     $controller = app($controllerClass);
-            
-        //     // Simple controller method execution
-        //     return app()->call([$controller, $method]);
-        // })->where('route', '.*@.*');
-        
-        // // THEN register the middleware injection event
-        // Event::listen(RouteMatched::class, function (RouteMatched $event) {
-        //     $route = $event->route;
-            
-        //     // Only process FlashHalt routes
-        //     if (!str_starts_with($route->uri(), 'hx/')) {
-        //         return;
-        //     }
-            
-        //     // Get the route parameter and parse it
-        //     $routeParam = $route->parameter('route');
-        //     if (!$routeParam || !str_contains($routeParam, '@')) {
-        //         return;
-        //     }
-            
-        //     [$controllerPath, $method] = explode('@', $routeParam);
-        //     $controllerClass = $this->resolveControllerClass($controllerPath);
-            
-        //     // Check if controller implements HasMiddleware
-        //     if (!class_exists($controllerClass)) {
-        //         return;
-        //     }
-            
-        //     $reflection = new \ReflectionClass($controllerClass);
-        //     if (!$reflection->implementsInterface(HasMiddleware::class)) {
-        //         return;
-        //     }
-            
-        //     // Get middleware from controller and add to route
-        //     $middlewareDefinitions = $controllerClass::middleware();
-            
-        //     foreach ($middlewareDefinitions as $middleware) {
-        //         if ($middleware instanceof \Illuminate\Routing\Controllers\Middleware) {
-        //             // Check if middleware applies to this method
-        //             if (empty($middleware->only) || in_array($method, $middleware->only)) {
-        //                 if (empty($middleware->except) || !in_array($method, $middleware->except)) {
-        //                     $route->middleware($middleware->middleware);
-        //                 }
-        //             }
-        //         } else {
-        //             // String middleware - add directly
-        //             $route->middleware($middleware);
-        //         }
-        //     }
-        // });
-
         // Register the base route (temporary closure)
         Route::middleware('web')->any('hx/{route}', function () {
             // This will never execute - we change the action in RouteMatched!
@@ -657,32 +601,6 @@ class FlashHaltServiceProvider extends ServiceProvider
             $route->setAction($newAction);
         });
     }
-
-    protected function applyControllerMiddleware($controller, string $method)
-{
-    foreach ($controller::middleware() as $middleware) {
-        if ($middleware instanceof \Illuminate\Routing\Controllers\Middleware) {
-            // Check if applies to this method
-            if (empty($middleware->only) || in_array($method, $middleware->only)) {
-                if (empty($middleware->except) || !in_array($method, $middleware->except)) {
-                    $this->executeMiddleware($middleware->middleware);
-                }
-            }
-        } else {
-            $this->executeMiddleware($middleware);
-        }
-    }
-}
-
-protected function executeMiddleware(string $middlewareName)
-{
-    $middleware = app($middlewareName);
-    $result = $middleware->handle(request(), function($req) { return $req; });
-    
-    if ($result !== request()) {
-        throw new \Symfony\Component\HttpKernel\Exception\HttpException(403, 'Middleware blocked');
-    }
-}
 
     protected function resolveControllerClass(string $path): string
     {
