@@ -20,7 +20,7 @@
       "name": "Gouater Loic Dimitri"
     }
   ],
-  "minimum-stability": "dev",
+  "minimum-stability": "beta",
   "prefer-stable": true,
   "require": {},
   "require-dev": {
