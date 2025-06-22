@@ -442,11 +442,11 @@ class RouteCompiler
         
         // Define regex patterns for different HTMX attributes that might contain FlashHALT routes
         $htmxPatterns = [
-            '/hx-get=["\']hx\/([^"\']+@[^"\']+)["\']/i',
-            '/hx-post=["\']hx\/([^"\']+@[^"\']+)["\']/i',
-            '/hx-put=["\']hx\/([^"\']+@[^"\']+)["\']/i',
-            '/hx-patch=["\']hx\/([^"\']+@[^"\']+)["\']/i',
-            '/hx-delete=["\']hx\/([^"\']+@[^"\']+)["\']/i',
+            '/hx-get=["\']\/?hx\/([^"\']+@[^"\']+)["\']/i',
+            '/hx-post=["\']\/?hx\/([^"\']+@[^"\']+)["\']/i',
+            '/hx-put=["\']\/?hx\/([^"\']+@[^"\']+)["\']/i',
+            '/hx-patch=["\']\/?hx\/([^"\']+@[^"\']+)["\']/i',
+            '/hx-delete=["\']\/?hx\/([^"\']+@[^"\']+)["\']/i',
         ];
 
         foreach ($htmxPatterns as $pattern) {
